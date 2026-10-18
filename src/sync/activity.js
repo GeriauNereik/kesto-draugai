@@ -125,7 +125,9 @@ async function refresh() {
     notifyLock();
     // Žaidėjų vardai – kad admin panelėje matytųsi, kas yra kas.
     const profiles = Object.fromEntries(getProfiles().map((p) => [p.id, { name: p.name, avatar: p.avatar || '' }]));
-    await patchDevice({ profiles, lastSeen: Date.now(), device: deviceLabel() });
+    const now = Date.now();
+    // firstSeen – kad admin panelėje naujas telefonas būtų pažymėtas „Naujas“.
+    await patchDevice({ profiles, lastSeen: now, device: deviceLabel(), ...(d.firstSeen ? {} : { firstSeen: now }) });
   } catch {
     /* be interneto – liekam su paskutine žinoma būsena */
   }

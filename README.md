@@ -84,7 +84,7 @@ Source: GitHub Actions**. Eiga matosi skirtuke **Actions** (~1–2 min.).
 
 Atnaujinus versiją, programėlė atsinaujina pati ją atidarius (su internetu).
 
-## Tėvų panelė (admin)
+## Admin panelė
 
 Atskira nuo žaidimo, veikia kompiuteryje:
 

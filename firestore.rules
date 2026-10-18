@@ -1,6 +1,6 @@
 rules_version = '2';
 // Kęsto draugai: kiekvienas įrenginys (anoniminė paskyra) rašo tik savo duomenis;
-// admin (tėvai) mato viską ir vienintelis gali uždėti / nuimti užraktus (laukas `locks`).
+// admin mato viską ir vienintelis gali uždėti / nuimti užraktus (laukas `locks`).
 service cloud.firestore {
   match /databases/{database}/documents {
     function isAdmin() {
@@ -12,9 +12,10 @@ service cloud.firestore {
 
     match /devices/{uid} {
       allow read: if isAdmin() || isDevice(uid);
-      allow create: if isDevice(uid) && !('locks' in request.resource.data);
+      // locks (kodas) ir label (pavadinimas) – keičia tik admin
+      allow create: if isDevice(uid) && !request.resource.data.keys().hasAny(['locks', 'label']);
       allow update: if isAdmin()
-        || (isDevice(uid) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['locks']));
+        || (isDevice(uid) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['locks', 'label']));
       allow delete: if isAdmin();
 
       match /days/{day} {

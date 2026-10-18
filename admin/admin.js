@@ -1,8 +1,9 @@
-// Tėvų panelė: kiekvieno įrenginio žaidėjai – kiek laiko žaidė, ką veikė; užraktas su kodu ir žinute.
+// Admin panelė: visi telefonai su įdiegta programėle (iki ~10). Kiekvienam – būsena, žaista laiko, veikla,
+// pavadinimas ir užraktas su kodu; taip pat kodas visiems iš karto. Naujas telefonas atsiranda iškart.
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import {
-  getFirestore, collection, doc, onSnapshot, query, orderBy, limit, documentId, updateDoc, deleteField, deleteDoc,
+  getFirestore, collection, doc, onSnapshot, query, orderBy, limit, documentId, updateDoc, deleteField, deleteDoc, writeBatch, FieldPath,
 } from 'firebase/firestore';
 import { FIREBASE, ADMIN_EMAIL } from '../src/sync/config.js';
 
@@ -17,45 +18,74 @@ const el = (tag, attrs = {}, ...kids) => {
     if (v == null || v === false) continue;
     if (k === 'class') e.className = v;
     else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (k === 'value') e.value = v;
     else e.setAttribute(k, v === true ? '' : v);
   }
   e.append(...kids.flat().filter((k) => k != null && k !== false));
   return e;
 };
 
+// ---------- Formatavimas ----------
 const DAYS = 7;
+const ONLINE = 150_000; // programėlė atsiliepia kas minutę, kol atidaryta
+const NEW = 24 * 3600_000;
 const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const lastDays = () => Array.from({ length: DAYS }, (_, i) => dayKey(new Date(Date.now() - i * 864e5)));
+const WEEKDAY = ['Sk', 'Pr', 'An', 'Tr', 'Kt', 'Pn', 'Št'];
 const dur = (sec) => {
   const m = Math.round((sec || 0) / 60);
+  if (!m) return '0 min.';
   return m < 60 ? `${m} min.` : `${Math.floor(m / 60)} val. ${m % 60} min.`;
 };
-const time = (t) => new Date(t).toLocaleString('lt-LT', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+const clock = (t) => new Date(t).toLocaleTimeString('lt-LT', { hour: '2-digit', minute: '2-digit' });
+const when = (t) => {
+  if (!t) return '–';
+  const d = new Date(t);
+  if (dayKey(d) === dayKey(new Date())) return `šiandien ${clock(t)}`;
+  if (dayKey(d) === dayKey(new Date(Date.now() - 864e5))) return `vakar ${clock(t)}`;
+  return d.toLocaleString('lt-LT', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
 const ago = (t) => {
-  if (!t) return 'dar niekada';
+  if (!t) return 'dar nematytas';
   const m = Math.round((Date.now() - t) / 60000);
   if (m < 2) return 'ką tik';
   if (m < 60) return `prieš ${m} min.`;
   if (m < 1440) return `prieš ${Math.round(m / 60)} val.`;
-  return time(t);
+  return when(t);
 };
 const stars = (n) => '★'.repeat(n || 0) + '☆'.repeat(Math.max(0, 3 - (n || 0)));
-
 function describe(e) {
   const secs = e.d ? ` · ${Math.floor(e.d / 60)}:${String(e.d % 60).padStart(2, '0')}` : '';
   switch (e.k) {
     case 'game':
-      return e.f ? `Nepavyko: ${e.n} (${e.l} lygis)${secs}` : `Sužaidė: ${e.n} (${e.l} lygis) ${stars(e.s)}${secs}`;
+      return e.f ? `Nepavyko: ${e.n}, ${e.l} lygis${secs}` : `${e.n}, ${e.l} lygis ${stars(e.s)}${secs}`;
     case 'quit':
-      return `Išėjo nebaigęs: ${e.n} (${e.l} lygis)${secs}`;
+      return `Išėjo nebaigęs: ${e.n}, ${e.l} lygis${secs}`;
     case 'draw':
       return `Nupiešė: ${e.n}`;
     case 'unlock':
-      return 'Atrakino kodu';
+      return '🔓 Atrakino kodu';
     default:
       return e.k;
   }
 }
+
+/** Užrakto būsena: aktyvus užraktas (bet kuris raktas) arba paskutinis atrakinimas. */
+function lockInfo(dev) {
+  const locks = dev.locks || {};
+  const unlocked = dev.unlocked || {};
+  const active = Object.entries(locks).find(([k, l]) => l?.code && (unlocked[k] || 0) < l.at);
+  if (active) return { on: true, key: active[0], ...active[1] };
+  const last = Object.entries(locks).filter(([k]) => unlocked[k]).sort((a, b) => unlocked[b[0]] - unlocked[a[0]])[0];
+  return { on: false, unlockedAt: last ? unlocked[last[0]] : 0 };
+}
+
+// ---------- Būsena ----------
+const devices = new Map(); // uid -> { data, days: { 'YYYY-MM-DD': {...} }, unsub }
+const open = new Set(); // išskleistos „Veikla“ dalys
+const drafts = new Map(); // uid -> { code, msg } – kad perpiešiant neprapultų įvestas tekstas
+let firstLoad = true;
+let unsubs = [];
 
 // ---------- Prisijungimas ----------
 $('#login').addEventListener('submit', async (ev) => {
@@ -64,32 +94,35 @@ $('#login').addEventListener('submit', async (ev) => {
   $('#login-error').hidden = true;
   try {
     await signInWithEmailAndPassword(auth, f.get('email'), f.get('password'));
-  } catch (e) {
+  } catch {
     $('#login-error').textContent = 'Nepavyko prisijungti – patikrink el. paštą ir slaptažodį.';
     $('#login-error').hidden = false;
   }
 });
 $('#logout').addEventListener('click', () => signOut(auth));
 
-let unsubs = [];
-onAuthStateChanged(auth, (user) => {
+// ?demo – pavyzdiniai duomenys be prisijungimo (išvaizdai peržiūrėti; mygtukai nieko nekeičia).
+const DEMO = new URLSearchParams(location.search).has('demo');
+if (DEMO) setTimeout(demo, 0);
+else onAuthStateChanged(auth, (user) => {
   unsubs.forEach((u) => u());
   unsubs = [];
-  $('#devices').replaceChildren();
+  devices.forEach((d) => d.unsub?.());
+  devices.clear();
+  firstLoad = true;
   const ok = user && user.email === ADMIN_EMAIL;
   $('#login').hidden = !!ok;
+  $('#app').hidden = !ok;
   $('#logout').hidden = !user;
+  $('#summary').textContent = '';
   if (user && !ok) {
-    $('#login-error').textContent = `Ši paskyra (${user.email}) nėra admin.`;
+    $('#login-error').textContent = `Paskyra ${user.email} neturi admin teisių.`;
     $('#login-error').hidden = false;
   }
-  if (ok) watchDevices();
+  if (ok) watch();
 });
 
-// ---------- Įrenginiai ----------
-const cards = new Map(); // uid -> { card, device, days }
-
-function watchDevices() {
+function watch() {
   unsubs.push(
     onSnapshot(
       query(collection(db, 'devices'), orderBy('lastSeen', 'desc')),
@@ -97,107 +130,206 @@ function watchDevices() {
         const seen = new Set();
         snap.forEach((d) => {
           seen.add(d.id);
-          let c = cards.get(d.id);
-          if (!c) {
-            c = { device: null, days: {} };
-            cards.set(d.id, c);
-            unsubs.push(
-              onSnapshot(query(collection(db, 'devices', d.id, 'days'), orderBy(documentId(), 'desc'), limit(DAYS)), (ds) => {
-                c.days = {};
-                ds.forEach((x) => (c.days[x.id] = x.data()));
-                render(d.id);
-              })
+          let entry = devices.get(d.id);
+          if (!entry) {
+            entry = { data: null, days: {} };
+            devices.set(d.id, entry);
+            entry.unsub = onSnapshot(
+              query(collection(db, 'devices', d.id, 'days'), orderBy(documentId(), 'desc'), limit(DAYS)),
+              (ds) => {
+                entry.days = {};
+                ds.forEach((x) => (entry.days[x.id] = x.data()));
+                render();
+              }
             );
+            if (!firstLoad) note(`Prisijungė naujas telefonas: ${d.data().device || 'įrenginys'}`);
           }
-          c.device = d.data();
-          render(d.id);
+          entry.data = d.data();
         });
-        for (const id of [...cards.keys()]) if (!seen.has(id)) cards.delete(id);
-        const root = $('#devices');
-        root.replaceChildren(...[...cards.values()].map((c) => c.el).filter(Boolean));
-        if (!cards.size) root.replaceChildren(el('p', { class: 'card muted' }, 'Dar nė vienas įrenginys neprisijungė. Atsidaryk žaidimą telefone (su internetu).'));
+        for (const [id, e] of devices) {
+          if (!seen.has(id)) {
+            e.unsub?.();
+            devices.delete(id);
+          }
+        }
+        firstLoad = false;
+        render();
       },
-      (err) => $('#devices').replaceChildren(el('p', { class: 'card error' }, `Klaida: ${err.message}`))
+      (err) => {
+        $('#devices').replaceChildren(el('p', { class: 'error' }, `Klaida: ${err.message}`));
+      }
     )
+  );
+  // Kas 30 s atnaujinam „prieš 3 min.“, „prisijungęs“ ir pan.
+  const t = setInterval(render, 30_000);
+  unsubs.push(() => clearInterval(t));
+}
+
+function note(text) {
+  const n = $('#bulk-note');
+  n.textContent = text;
+  n.hidden = false;
+  clearTimeout(note.t);
+  note.t = setTimeout(() => (n.hidden = true), 6000);
+}
+
+// ---------- Kodas visiems ----------
+// Raktas '*' – „visi šio telefono žaidėjai“ (tekstiniame kelyje '*' neleidžiamas, todėl FieldPath).
+const ALL = new FieldPath('locks', '*');
+$('#bulk').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const f = new FormData(ev.target);
+  const code = String(f.get('code') || '').replace(/\D/g, '');
+  if (code.length < 3) return note('Kodas turi būti bent 3 skaitmenų.');
+  if (!devices.size) return note('Telefonų dar nėra.');
+  const lock = { code, msg: String(f.get('msg') || '').trim(), at: Date.now() };
+  const b = writeBatch(db);
+  for (const id of devices.keys()) b.update(doc(db, 'devices', id), ALL, lock);
+  await b.commit();
+  note(`Užrakinta ${devices.size} telefonų(-ai) kodu ${code}.`);
+});
+$('#bulk-clear').addEventListener('click', async () => {
+  if (!devices.size) return;
+  const b = writeBatch(db);
+  for (const id of devices.keys()) b.update(doc(db, 'devices', id), { locks: deleteField() });
+  await b.commit();
+  note('Užraktai nuimti visiems telefonams.');
+});
+
+// ---------- Vienas telefonas ----------
+const setLock = (uid, code, msg) => updateDoc(doc(db, 'devices', uid), ALL, { code, msg, at: Date.now() });
+const clearLock = (uid) => updateDoc(doc(db, 'devices', uid), { locks: deleteField() });
+const rename = (uid, label) => updateDoc(doc(db, 'devices', uid), { label: label ? label : deleteField() });
+
+function deviceRow(uid, entry) {
+  const dev = entry.data || {};
+  const days = lastDays();
+  const profiles = Object.entries(dev.profiles || {});
+  const sec = (d, pid) => entry.days[d]?.p?.[pid]?.sec || 0;
+  const daySec = (d) => profiles.reduce((a, [pid]) => a + sec(d, pid), 0) || Object.values(entry.days[d]?.p || {}).reduce((a, x) => a + (x.sec || 0), 0);
+  const today = daySec(days[0]);
+  const week = days.reduce((a, d) => a + daySec(d), 0);
+  const online = dev.lastSeen && Date.now() - dev.lastSeen < ONLINE;
+  const isNew = dev.firstSeen && Date.now() - dev.firstSeen < NEW;
+  const lock = lockInfo(dev);
+  const name = dev.label || dev.device || 'Įrenginys';
+  const draft = drafts.get(uid) || { code: lock.on ? lock.code : '', msg: lock.on ? lock.msg || '' : '' };
+
+  const code = el('input', {
+    'data-id': `${uid}:code`, inputmode: 'numeric', pattern: '[0-9]*', maxlength: 8, placeholder: 'Kodas', 'aria-label': 'Kodas', value: draft.code,
+    oninput: (e) => drafts.set(uid, { ...draft, ...drafts.get(uid), code: e.target.value }),
+  });
+  const msg = el('input', {
+    'data-id': `${uid}:msg`, placeholder: 'Žinutė (nebūtina)', 'aria-label': 'Žinutė', value: draft.msg,
+    oninput: (e) => drafts.set(uid, { ...draft, ...drafts.get(uid), msg: e.target.value }),
+  });
+  const submit = async (ev) => {
+    ev.preventDefault();
+    const v = code.value.replace(/\D/g, '');
+    if (v.length < 3) return code.focus();
+    await setLock(uid, v, msg.value.trim());
+    drafts.delete(uid);
+  };
+  const label = el('input', {
+    'data-id': `${uid}:label`, class: 'name-input', value: dev.label || '', placeholder: dev.device || 'Įrenginys', 'aria-label': 'Telefono pavadinimas', title: 'Spausk ir pervadink',
+    onchange: (e) => rename(uid, e.target.value.trim()),
+    onkeydown: (e) => e.key === 'Enter' && e.target.blur(),
+  });
+
+  const row = el('article', { class: `device${lock.on ? ' locked' : ''}` },
+    el('div', { class: 'd-main' },
+      el('div', { class: 'd-name' },
+        el('span', { class: `dot${online ? ' on' : ''}`, title: online ? 'Programėlė atidaryta' : 'Neprisijungęs' }),
+        label,
+        isNew ? el('span', { class: 'badge new' }, 'Naujas') : null,
+        el('span', { class: 'muted small' }, dev.label ? dev.device || '' : '')),
+      el('div', { class: 'd-stats' },
+        el('span', {}, el('b', {}, profiles.length ? profiles.map(([, p]) => p.name).join(', ') : 'Žaidėjų dar nėra')),
+        el('span', {}, 'Šiandien ', el('b', {}, dur(today))),
+        el('span', {}, '7 d. ', el('b', {}, dur(week))),
+        el('span', { class: 'muted' }, online ? 'Atidaryta dabar' : `Matytas ${ago(dev.lastSeen)}`))),
+    el('div', { class: 'd-lock' },
+      lock.on
+        ? el('span', { class: 'pill on' }, `🔒 Užrakinta · ${lock.code}`, lock.msg ? el('small', {}, `„${lock.msg}“`) : null)
+        : el('span', { class: 'pill' }, lock.unlockedAt ? `🔓 Atrakinta ${when(lock.unlockedAt)}` : '🔓 Atrakinta'),
+      el('form', { class: 'lock-form', onsubmit: submit },
+        code, msg,
+        el('button', { type: 'submit' }, lock.on ? 'Pakeisti' : 'Užrakinti'),
+        lock.on ? el('button', { type: 'button', class: 'ghost', onclick: () => clearLock(uid) }, 'Nuimti') : null)),
+    el('details', { class: 'd-more', open: open.has(uid) || null, ontoggle: (e) => (e.target.open ? open.add(uid) : open.delete(uid)) },
+      el('summary', {}, 'Veikla ir statistika'),
+      details(uid, entry, days, profiles, daySec))
+  );
+  return row;
+}
+
+function details(uid, entry, days, profiles, daySec) {
+  const max = Math.max(60, ...days.map(daySec));
+  const events = days
+    .flatMap((d) => Object.entries(entry.days[d]?.p || {}).flatMap(([pid, x]) => (x.ev || []).map((e) => ({ ...e, who: entry.data?.profiles?.[pid]?.name || '' }))))
+    .sort((a, b) => b.t - a.t)
+    .slice(0, 60);
+  return el('div', { class: 'more' },
+    el('div', { class: 'bars', 'aria-label': 'Žaista per 7 dienas' }, days.slice().reverse().map((d) => {
+      const s = daySec(d);
+      const wd = WEEKDAY[new Date(`${d}T12:00`).getDay()];
+      return el('div', { class: 'bar', title: `${d}: ${dur(s)}` },
+        el('em', {}, s ? `${Math.round(s / 60)}` : ''),
+        el('span', { style: `height:${Math.round((s / max) * 100)}%` }),
+        el('small', {}, wd));
+    })),
+    events.length
+      ? el('ul', { class: 'events' }, events.map((e) => el('li', {},
+          el('time', {}, when(e.t)),
+          profiles.length > 1 && e.who ? el('b', {}, e.who) : null,
+          el('span', {}, describe(e)))))
+      : el('p', { class: 'muted' }, 'Per 7 dienas veiklos nėra.'),
+    el('button', {
+      class: 'ghost danger',
+      onclick: () => window.confirm('Pašalinti šį telefoną iš sąrašo? Jei programėlė vėl bus atidaryta, jis atsiras iš naujo.') && deleteDoc(doc(db, 'devices', uid)),
+    }, 'Pašalinti iš sąrašo')
   );
 }
 
-function render(uid) {
-  const c = cards.get(uid);
-  const dev = c.device || {};
-  const profiles = dev.profiles || {};
-  const locks = dev.locks || {};
-  const unlocked = dev.unlocked || {};
-  const days = lastDays();
-
-  const lockBox = (key, label) => {
-    const l = locks[key];
-    const active = l && (unlocked[key] || 0) < l.at;
-    const code = el('input', { inputmode: 'numeric', pattern: '[0-9]*', maxlength: 8, placeholder: 'Kodas', value: active ? l.code : '' });
-    const msg = el('input', { placeholder: 'Žinutė, pvz. Ar šiandien šėrei katę?', value: active ? l.msg || '' : '' });
-    const status = active
-      ? el('p', { class: 'lock-status on' }, `Užrakinta nuo ${time(l.at)}`)
-      : l
-        ? el('p', { class: 'lock-status' }, `Atrakinta ${unlocked[key] ? `(kodas suvestas)` : ''}`)
-        : null;
-    const set = async () => {
-      const v = code.value.replace(/\D/g, '');
-      if (v.length < 3) return code.focus();
-      await updateDoc(doc(db, 'devices', uid), { [`locks.${key}`]: { code: v, msg: msg.value.trim(), at: Date.now() } });
-    };
-    const clear = () => updateDoc(doc(db, 'devices', uid), { [`locks.${key}`]: deleteField() });
-    return el('div', { class: `lock-box${active ? ' active' : ''}` },
-      el('h4', {}, label),
-      status,
-      el('div', { class: 'lock-row' }, code, msg),
-      el('div', { class: 'lock-row' },
-        el('button', { onclick: set }, active ? 'Pakeisti' : 'Užrakinti'),
-        l ? el('button', { class: 'ghost', onclick: clear }, 'Nuimti užraktą') : null)
-    );
-  };
-
-  const profileCard = (pid, p) => {
-    const perDay = days.map((d) => ({ d, sec: c.days[d]?.p?.[pid]?.sec || 0 }));
-    const week = perDay.reduce((a, x) => a + x.sec, 0);
-    const max = Math.max(60, ...perDay.map((x) => x.sec));
-    const events = days
-      .flatMap((d) => c.days[d]?.p?.[pid]?.ev || [])
-      .sort((a, b) => b.t - a.t)
-      .slice(0, 40);
-    return el('section', { class: 'profile' },
-      el('div', { class: 'p-head' },
-        el('h3', {}, p.name || pid),
-        el('p', { class: 'muted' }, `Šiandien ${dur(perDay[0].sec)} · per 7 d. ${dur(week)}`)),
-      el('div', { class: 'bars' }, perDay.slice().reverse().map((x) =>
-        el('div', { class: 'bar', title: `${x.d}: ${dur(x.sec)}` },
-          el('span', { style: `height:${Math.round((x.sec / max) * 100)}%` }),
-          el('small', {}, x.d.slice(5))))),
-      el('details', { open: true },
-        el('summary', {}, `Veikla (${events.length})`),
-        events.length
-          ? el('ul', { class: 'events' }, events.map((e) => el('li', {}, el('time', {}, time(e.t)), ' ', describe(e))))
-          : el('p', { class: 'muted' }, 'Per 7 dienas veiklos nėra.')),
-      lockBox(pid, `Užraktas: ${p.name || pid}`)
-    );
-  };
-
-  const card = el('article', { class: 'card device' },
-    el('div', { class: 'd-head' },
-      el('h2', {}, dev.device || 'Įrenginys'),
-      el('p', { class: 'muted' }, `Paskutinį kartą matytas ${ago(dev.lastSeen)}`)),
-    Object.keys(profiles).length
-      ? Object.entries(profiles).map(([pid, p]) => profileCard(pid, p))
-      : el('p', { class: 'muted' }, 'Žaidėjų dar nėra.'),
-    lockBox('*', 'Užraktas visiems šio įrenginio žaidėjams'),
-    el('button', {
-      class: 'ghost danger',
-      onclick: () => {
-        if (window.confirm(`Pašalinti „${dev.device || 'Įrenginys'}“ iš sąrašo? (Jei juo vėl bus žaidžiama, jis atsiras iš naujo.)`)) deleteDoc(doc(db, 'devices', uid));
-      },
-    }, 'Pašalinti įrenginį iš sąrašo')
+// ---------- Piešimas ----------
+let pending = false;
+function render() {
+  // Nepiešiam iš naujo, kol admin rašo – kitaip dingtų žymeklis.
+  const a = document.activeElement;
+  if (a && a.tagName === 'INPUT' && $('#devices').contains(a)) {
+    if (!pending) {
+      pending = true;
+      a.addEventListener('blur', () => ((pending = false), setTimeout(render, 0)), { once: true });
+    }
+    return;
+  }
+  const list = [...devices.entries()].filter(([, e]) => e.data);
+  const online = list.filter(([, e]) => Date.now() - (e.data.lastSeen || 0) < ONLINE).length;
+  const locked = list.filter(([, e]) => lockInfo(e.data).on).length;
+  $('#summary').textContent = `${list.length} telefonai · ${online} atidaryti · ${locked} užrakinti`;
+  $('#list-count').textContent = list.length ? '' : '';
+  $('#devices').replaceChildren(
+    ...(list.length
+      ? list.map(([uid, e]) => deviceRow(uid, e))
+      : [el('p', { class: 'empty' }, 'Telefonų dar nėra. Atidarius programėlę telefone (su internetu), jis atsiras čia iškart.')])
   );
-  // Neperpiešiam, kol tėvai rašo kodą ar žinutę.
-  if (c.el && c.el.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;
-  if (c.el?.isConnected) c.el.replaceWith(card);
-  c.el = card;
+}
+
+function demo() {
+  $('#login').hidden = true;
+  $('#app').hidden = false;
+  const now = Date.now();
+  const days = lastDays();
+  const ev = (t, k, n, l, st, d) => ({ t, k, n, l, s: st, d });
+  const mk = (data, perDay) => ({ data, days: Object.fromEntries(days.map((d, i) => [d, { p: perDay(i) }])) });
+  devices.set('a', mk(
+    { device: 'iPhone', label: 'Kęsto iPhone', lastSeen: now - 40_000, firstSeen: now - 9 * 864e5, profiles: { p1: { name: 'Kęstas' } } },
+    (i) => ({ p1: { sec: [1260, 600, 0, 2400, 900, 300, 1500][i], ev: i ? [] : [ev(now - 300_000, 'game', 'Laikrodis', 2, 3, 95), ev(now - 900_000, 'draw', 'katę'), ev(now - 1_500_000, 'quit', 'Debesėliai', 1, 0, 40)] } })
+  ));
+  devices.set('b', mk(
+    { device: 'iPad', lastSeen: now - 3 * 3600_000, firstSeen: now - 5 * 864e5, profiles: { p2: { name: 'Ona' }, p3: { name: 'Jonas' } }, locks: { '*': { code: '4821', msg: 'Ar šiandien šėrei katę?', at: now - 3600_000 } } },
+    (i) => ({ p2: { sec: [600, 0, 1200, 0, 0, 600, 0][i], ev: i ? [] : [ev(now - 4 * 3600_000, 'game', 'Surask poras', 3, 2, 120)] }, p3: { sec: [300, 300, 0, 0, 900, 0, 0][i] } })
+  ));
+  devices.set('c', mk({ device: 'iPhone', lastSeen: now - 20_000, firstSeen: now - 600_000, profiles: {} }, () => ({})));
+  render();
 }

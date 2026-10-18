@@ -3,13 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Kęsto draugai – tėvų panelė</title>
+    <title>Kęsto draugai · Admin</title>
     <link rel="stylesheet" href="./admin.css" />
   </head>
   <body>
     <header class="top">
-      <h1>Kęsto draugai <span>tėvų panelė</span></h1>
-      <button id="logout" class="ghost" hidden>Atsijungti</button>
+      <div class="brand">
+        <h1>Kęsto draugai</h1>
+        <span class="tag">Admin</span>
+      </div>
+      <div class="top-right">
+        <span id="summary" class="muted"></span>
+        <button id="logout" class="ghost" hidden>Atsijungti</button>
+      </div>
     </header>
 
     <form id="login" class="card login" hidden>
@@ -20,7 +26,29 @@
       <p id="login-error" class="error" hidden></p>
     </form>
 
-    <main id="devices"></main>
+    <main id="app" hidden>
+      <section class="card bulk">
+        <div>
+          <h2>Kodas visiems telefonams</h2>
+          <p class="muted">Užrakina visus telefonus iš karto. Žaisti bus galima tik suvedus kodą.</p>
+        </div>
+        <form id="bulk" class="lock-form">
+          <input name="code" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Kodas" aria-label="Kodas" />
+          <input name="msg" placeholder="Žinutė, pvz. Ar šiandien šėrei katę?" aria-label="Žinutė" />
+          <button type="submit">Užrakinti visus</button>
+          <button type="button" id="bulk-clear" class="ghost">Nuimti visus</button>
+        </form>
+        <p id="bulk-note" class="note" hidden></p>
+      </section>
+
+      <section class="card list">
+        <div class="list-head">
+          <h2>Telefonai</h2>
+          <span class="muted" id="list-count"></span>
+        </div>
+        <div id="devices"></div>
+      </section>
+    </main>
     <script type="module" src="./admin.js"></script>
   </body>
 </html>

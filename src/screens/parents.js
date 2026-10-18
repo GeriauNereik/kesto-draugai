@@ -233,7 +233,7 @@ export function parentsScreen(root, { onHome }) {
       h('h2', { text: 'Apie' }),
       h('p', {
         class: 'p-note',
-        text: 'Kiek ir ką žaista, siunčiama tik į tėvų panelę (Firebase), kad tėvai matytų veiklą ir galėtų uždėti kodą. Jokios kitos analitikos ar reklamų.',
+        text: 'Kiek ir ką žaista, siunčiama tik į admin panelę (Firebase), kad būtų matoma veikla ir būtų galima uždėti kodą. Jokios kitos analitikos ar reklamų.',
       }),
       h('p', {
         class: 'p-note',
