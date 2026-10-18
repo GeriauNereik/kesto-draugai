@@ -6,8 +6,12 @@ const EVERY = 30 * 60 * 1000;
 
 export function setupPwa() {
   if (!('serviceWorker' in navigator)) return;
-  registerSW({
+  const updateSW = registerSW({
     immediate: true,
+    // Jei nauja versija vis tiek laukia – aktyvuojam ją ir persikraunam.
+    onNeedRefresh() {
+      updateSW(true);
+    },
     onRegisteredSW(_url, reg) {
       if (!reg) return;
       const check = () => {

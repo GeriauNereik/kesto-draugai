@@ -221,6 +221,9 @@ export default defineConfig({
           },
         ],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // Nauja versija aktyvuojasi iškart (nelaukia, kol bus uždaryti visi langai).
+        skipWaiting: true,
+        clientsClaim: true,
         cleanupOutdatedCaches: true,
       },
     }),
