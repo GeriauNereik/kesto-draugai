@@ -49,9 +49,8 @@ export function levelScreen(root, { game, onLevel, onHome }) {
 /** Mažas vaizdelis mygtuke: ką reiškia lygis (vaikai neskaito, tėvai iškart supranta). */
 function preview(lvl) {
   const tiles = (typeof lvl.tiles === 'function' ? lvl.tiles() : lvl.tiles) || [];
-  return h(
-    'span',
-    { class: `lvl-preview ${lvl.wide ? 'wide' : ''}`, 'aria-hidden': 'true' },
-    tiles.map((t) => h('span', { class: 'lvl-tile', text: t }))
-  );
+  return h('span', { class: `lvl-preview ${lvl.wide ? 'wide' : ''}`, 'aria-hidden': 'true' }, [
+    lvl.img ? h('img', { class: 'lvl-img', src: lvl.img, alt: '', decoding: 'async' }) : null,
+    ...tiles.map((t) => h('span', { class: 'lvl-tile', text: t })),
+  ]);
 }

@@ -9,7 +9,7 @@ const KEY = 'miskiniai.v1';
 // Pakeitus šią žymą, kiekviename įrenginyje vieną kartą išvalomi visų žaidėjų rezultatai
 // (žvaigždutės, stiklainis, sužaistų žaidimų skaičius). Vardai, avatarai ir nustatymai lieka.
 const RESULTS_RESET = '2026-10-18';
-const clearResults = (p) => ({ ...p, stars: {}, jar: 0, seenJar: 0, played: 0, draw: {} });
+const clearResults = (p) => ({ ...p, stars: {}, jar: 0, seenJar: 0, played: 0, draw: {}, records: {} });
 const DEFAULT_SETTINGS = { sound: true };
 
 function load() {
@@ -141,6 +141,20 @@ export function setDrawn(cat, list) {
   save();
 }
 
+// ---------- Rekordai (bėgimo žaidimas ir pan.) ----------
+export function getRecord(game, profile = currentProfile()) {
+  return profile?.records?.[game] || 0;
+}
+
+/** Išsaugo, jei geriau už ankstesnį. Grąžina true, jei tai naujas rekordas. */
+export function saveRecord(game, value) {
+  const p = currentProfile();
+  if (!p || value <= (p.records?.[game] || 0)) return false;
+  p.records = { ...(p.records || {}), [game]: value };
+  save();
+  return true;
+}
+
 /** Stiklainio būsena: kiek iš viso ir kiek vaikas jau "matė" meniu (animacijai). */
 export function jarInfo() {
   const p = currentProfile();
@@ -165,7 +179,7 @@ export function markGamePlayed() {
 
 /** Ištrina profilio žvaigždutes ir skaitiklius. Vardas ir nustatymai lieka. */
 export function resetProgress(id = state.current) {
-  updateProfile(id, { stars: {}, jar: 0, seenJar: 0, played: 0, draw: {} });
+  updateProfile(id, { stars: {}, jar: 0, seenJar: 0, played: 0, draw: {}, records: {} });
 }
 
 // ---------- Nustatymai ----------

@@ -42,6 +42,21 @@ const SOUNDS = {
     [523, 659, 784, 1047].forEach((f, i) => tone(c, { freq: f, start: i * 0.11, dur: 0.3, type: 'triangle', vol: 0.1 }));
   },
   whoosh: (c) => tone(c, { freq: 200, to: 900, dur: 0.18, type: 'sine', vol: 0.05 }),
+  // Bėgimas: šuolis (trumpas kylantis „boing“)
+  jump: (c) => {
+    tone(c, { freq: 330, to: 880, dur: 0.14, type: 'square', vol: 0.035 });
+    tone(c, { freq: 660, to: 1320, dur: 0.1, type: 'sine', vol: 0.05 });
+  },
+  // Bėgimas: atsitrenkė (krentantis „bum“ ir žemas dūžis)
+  crash: (c) => {
+    tone(c, { freq: 520, to: 110, dur: 0.45, type: 'sawtooth', vol: 0.05 });
+    tone(c, { freq: 140, to: 60, start: 0.05, dur: 0.35, type: 'sine', vol: 0.16 });
+  },
+  // Bėgimas: kas 100 taškų
+  milestone: (c) => {
+    tone(c, { freq: 1047, dur: 0.09, type: 'square', vol: 0.03 });
+    tone(c, { freq: 1568, start: 0.09, dur: 0.14, type: 'square', vol: 0.03 });
+  },
 };
 
 export function sfx(name, arg) {

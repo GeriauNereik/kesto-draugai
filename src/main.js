@@ -35,6 +35,7 @@ import { countingGame } from './games/counting.js';
 import { memoryGame } from './games/memory.js';
 import { mathGame } from './games/math.js';
 import { cloudsGame } from './games/clouds.js';
+import { runnerGame } from './games/runner.js';
 import { clockGame } from './games/clock.js';
 import { grade2Game } from './games/grade2.js';
 import { tictactoeGame } from './games/tictactoe.js';
@@ -51,6 +52,7 @@ const GAME_MODULES = {
   grade2: grade2Game,
   tictactoe: tictactoeGame,
   draw: drawGame,
+  runner: runnerGame,
 };
 
 const app = document.getElementById('app');
@@ -146,7 +148,8 @@ const screens = {
     show(GAME_MODULES[game.id], {
       level,
       onHome: () => {
-        log('quit');
+        // Bėgime išeinama visada per „Atgal“ (rezultatas jau užregistruotas žuvus).
+        if (game.id !== 'runner') log('quit');
         screens.level(game);
       },
       onFinish({ mistakes = 0, stars, failed = false }) {

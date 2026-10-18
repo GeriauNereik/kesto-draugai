@@ -3778,3 +3778,129 @@ input {
   .lock-key { height: 44px; font-size: 1.3rem; }
   .lock-icon { width: 36px; height: 36px; }
 }
+
+/* ---------- Miško bėgimas ---------- */
+.lvl-img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(90, 56, 37, 0.25));
+}
+.lvl-preview:has(.lvl-img) {
+  align-items: center;
+}
+.run-scores {
+  margin-left: auto;
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: var(--shadow-sm);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--brown);
+}
+.run-hi {
+  color: var(--brown-soft);
+  font-size: 0.95rem;
+}
+.run-score {
+  font-size: 1.25rem;
+  letter-spacing: 0.04em;
+}
+.run-score.flash {
+  animation: run-flash 0.6s steps(2) 2;
+}
+@keyframes run-flash {
+  50% { opacity: 0.25; }
+}
+.run-stage {
+  position: relative;
+  flex: 0 1 auto;
+  /* Vertikaliame telefone – ne per aukštas (kitaip daug tuščio dangaus), centre */
+  height: 100%;
+  max-height: min(100%, 125vw);
+  margin-block: auto;
+  min-height: 0;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(227, 244, 255, 0.85), rgba(255, 246, 229, 0.6));
+  box-shadow: var(--shadow-sm);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.run-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.run-hint {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 4px;
+  text-align: center;
+  padding: 12px 18px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-sm);
+  color: var(--brown);
+  pointer-events: none;
+  width: max-content;
+  max-width: 86%;
+}
+.run-hint b {
+  font-size: 1.35rem;
+}
+.run-hint span {
+  font-size: 0.95rem;
+  color: var(--brown-soft);
+}
+.run-over {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  justify-items: center;
+  align-items: start;
+  padding-top: 7%; /* virš veikėjo – kad matytųsi, į ką atsitrenkė */
+  background: rgba(255, 246, 229, 0.35);
+}
+.run-card {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  padding: 18px 26px 20px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: center;
+  color: var(--brown);
+}
+.run-card p {
+  margin: 0;
+}
+.run-oi {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--coral-dark);
+}
+.run-final {
+  font-size: 1.1rem;
+}
+.run-final b {
+  font-size: 2.4rem;
+  font-variant-numeric: tabular-nums;
+}
+.run-best {
+  color: var(--brown-soft);
+  font-weight: 600;
+  margin-bottom: 10px !important;
+}

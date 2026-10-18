@@ -63,6 +63,8 @@ function describe(e) {
       return `Išėjo nebaigęs: ${e.n}, ${e.l} lygis${secs}`;
     case 'draw':
       return `Nupiešė: ${e.n}`;
+    case 'run':
+      return `${e.n}: ${e.p} tšk.${secs}`;
     case 'unlock':
       return '🔓 Atrakino kodu';
     default:
