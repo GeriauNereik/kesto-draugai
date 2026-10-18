@@ -13,6 +13,7 @@ import { sfx } from '../sfx.js';
 import { burst } from '../ui/fx.js';
 import { pulse } from '../ui/motion.js';
 import { preload } from '../audio.js';
+import { track } from '../sync/activity.js';
 
 export const DRAW_ALL = { id: 'viskas', label: 'Viskas', items: ALL_DRAW_ITEMS };
 export const DRAW_LEVELS = [...DRAW_CATEGORIES, DRAW_ALL];
@@ -158,6 +159,7 @@ export function drawGame(root, { level, onHome, onFinish }) {
     shell.char.setEmotion('happy');
     shell.char.speak(`phrases/${randomPraise()}`, undefined, { delay: SFX_GAP });
     addToJar(1);
+    track({ k: 'draw', g: 'draw', n: item });
     drawn = [...drawn, item];
     setDrawn(cat.id, drawn);
     idx++;

@@ -1,0 +1,27 @@
+rules_version = '2';
+// Kęsto draugai: kiekvienas įrenginys (anoniminė paskyra) rašo tik savo duomenis;
+// admin (tėvai) mato viską ir vienintelis gali uždėti / nuimti užraktus (laukas `locks`).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'tomas@bucel.lt';
+    }
+    function isDevice(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /devices/{uid} {
+      allow read: if isAdmin() || isDevice(uid);
+      allow create: if isDevice(uid) && !('locks' in request.resource.data);
+      allow update: if isAdmin()
+        || (isDevice(uid) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['locks']));
+      allow delete: if isAdmin();
+
+      match /days/{day} {
+        allow read: if isAdmin() || isDevice(uid);
+        allow write: if isDevice(uid);
+        allow delete: if isAdmin();
+      }
+    }
+  }
+}

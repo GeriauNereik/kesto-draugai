@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="lt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kęsto draugai – tėvų panelė</title>
+    <link rel="stylesheet" href="./admin.css" />
+  </head>
+  <body>
+    <header class="top">
+      <h1>Kęsto draugai <span>tėvų panelė</span></h1>
+      <button id="logout" class="ghost" hidden>Atsijungti</button>
+    </header>
+
+    <form id="login" class="card login" hidden>
+      <h2>Prisijungimas</h2>
+      <label>El. paštas <input name="email" type="email" autocomplete="username" required /></label>
+      <label>Slaptažodis <input name="password" type="password" autocomplete="current-password" required /></label>
+      <button type="submit">Prisijungti</button>
+      <p id="login-error" class="error" hidden></p>
+    </form>
+
+    <main id="devices"></main>
+    <script type="module" src="./admin.js"></script>
+  </body>
+</html>

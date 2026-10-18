@@ -233,7 +233,7 @@ export function parentsScreen(root, { onHome }) {
       h('h2', { text: 'Apie' }),
       h('p', {
         class: 'p-note',
-        text: 'Duomenys saugomi tik šiame įrenginyje. Jokios analitikos ar reklamų – internetu tik atsisiunčiamos naujos žaidimo versijos.',
+        text: 'Kiek ir ką žaista, siunčiama tik į tėvų panelę (Firebase), kad tėvai matytų veiklą ir galėtų uždėti kodą. Jokios kitos analitikos ar reklamų.',
       }),
       h('p', {
         class: 'p-note',

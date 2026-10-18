@@ -83,3 +83,18 @@ Source: GitHub Actions**. Eiga matosi skirtuke **Actions** (~1–2 min.).
 4. Toliau veikia ir lėktuvo režimu.
 
 Atnaujinus versiją, programėlė atsinaujina pati ją atidarius (su internetu).
+
+## Tėvų panelė (admin)
+
+Atskira nuo žaidimo, veikia kompiuteryje:
+
+```bash
+npm run admin
+```
+
+Atsidaro <http://localhost:5180>. Prisijungiama Firebase admin paskyra (`ADMIN_EMAIL` faile
+`src/sync/config.js` ir `firestore.rules` turi sutapti). Matosi kiekvienas įrenginys ir jo žaidėjai:
+kiek laiko žaista per 7 dienas, kas žaista ir nupiešta. Galima uždėti užraktą su kodu ir žinute
+(vienam žaidėjui arba visiems) – telefone žaisti bus galima tik suvedus kodą.
+
+Firebase projektas: `miskiniai-616db`. Pakeitus taisykles: `npx firebase-tools deploy --only firestore:rules`.

@@ -10,6 +10,8 @@ import './style.css';
 
 import { unlockAudio, preload, stop, setMuted } from './audio.js';
 import { setupPwa } from './pwa.js';
+import { startActivity, track, profileChanged } from './sync/activity.js';
+import { watchLock } from './screens/lock.js';
 import { allPortraits } from './config/characters.js';
 import { allRigImgs } from './character/rig-config.js';
 import { PHRASES } from './config/phrases.js';
@@ -100,6 +102,7 @@ const screens = {
       onBack: canGoBack ? screens.profiles : null,
       onDone: () => {
         resetGreeting();
+        profileChanged();
         screens.menu({ firstTime: true });
       },
     });
@@ -108,6 +111,7 @@ const screens = {
     show(profilesScreen, {
       onPicked: () => {
         resetGreeting();
+        profileChanged();
         screens.menu();
       },
       onNew: screens.onboarding,
@@ -136,11 +140,18 @@ const screens = {
     show(levelScreen, { game, onHome: screens.back(game), onLevel: (level) => screens.game(game, level) });
   },
   game(game, level) {
+    const started = Date.now();
+    // Admin panelei: kas žaista, kiek laiko, koks rezultatas (g – žaidimas, l – lygis, s – žvaigždutės, d – sek.)
+    const log = (k, extra = {}) => track({ k, g: game.id, n: game.title, l: level, d: Math.round((Date.now() - started) / 1000), ...extra });
     show(GAME_MODULES[game.id], {
       level,
-      onHome: () => screens.level(game),
+      onHome: () => {
+        log('quit');
+        screens.level(game);
+      },
       onFinish({ mistakes = 0, stars, failed = false }) {
         breakDue = markGamePlayed();
+        log('game', { s: failed ? 0 : stars ?? starsFor(mistakes), f: failed ? 1 : 0 });
         if (failed) return screens.result(game, level, 0, false, true);
         const starCount = stars ?? starsFor(mistakes);
         const isBest = saveStars(game.id, level, starCount);
@@ -185,3 +196,6 @@ screens.start();
 
 // Atnaujinimai (įdiegtoje programėlėje): žr. src/pwa.js
 setupPwa();
+// Statistika admin panelei ir užraktas su kodu: žr. src/sync/
+startActivity();
+watchLock();
