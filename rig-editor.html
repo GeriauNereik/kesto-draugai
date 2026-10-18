@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="lt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Rig redaktorius</title>
+    <style>
+      :root { color-scheme: light; --bg: #fff6e5; --ink: #5a3825; --soft: #8a6250; --line: #f0dfc2; --acc: #2e9a48; --pin: #e5533d; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.4 system-ui, -apple-system, sans-serif; }
+      header { display: flex; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+      h1 { font-size: 1.1rem; margin: 0 12px 0 0; }
+      main { display: grid; grid-template-columns: minmax(280px, 560px) minmax(280px, 1fr); gap: 16px; padding: 16px; }
+      @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+      .stage-wrap { position: relative; width: 100%; aspect-ratio: 1; background: repeating-conic-gradient(#fff 0 25%, #f6efe2 0 50%) 0 0 / 32px 32px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+      .stage { position: absolute; inset: 0; container-type: size; }
+      .pins { position: absolute; inset: 0; cursor: crosshair; }
+      .pin { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #fff; border: 3px solid var(--soft); pointer-events: none; }
+      .pin.sel { border-color: var(--pin); width: 18px; height: 18px; margin: -9px 0 0 -9px; box-shadow: 0 0 0 4px rgba(229, 83, 61, 0.25); }
+      .pin span { position: absolute; left: 14px; top: -6px; font-size: 11px; background: rgba(255, 255, 255, 0.85); padding: 0 4px; border-radius: 4px; white-space: nowrap; }
+      section { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+      section h2 { font-size: 0.95rem; margin: 0 0 8px; }
+      .layers label { display: block; padding: 3px 0; cursor: pointer; }
+      .row { display: grid; grid-template-columns: 110px 1fr 56px; align-items: center; gap: 8px; margin: 4px 0; }
+      button, select { font: inherit; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
+      button.primary { background: var(--acc); border-color: var(--acc); color: #fff; }
+      .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+      textarea { width: 100%; height: 220px; font: 12px/1.35 ui-monospace, monospace; border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+      .note { color: var(--soft); font-size: 0.85rem; margin: 6px 0 0; }
+      .warn { color: var(--pin); }
+      /* veikėjo stiliai (kaip programoje) */
+      .rig { position: absolute; inset: 0; margin: auto; width: min(100cqw, 100cqh); height: min(100cqw, 100cqh); }
+      .rig-layer, .rig-ch, .rig-variants { position: absolute; inset: 0; pointer-events: none; }
+      .rig-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+      .rig-var { opacity: 0; } .rig-var.on { opacity: 1; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Rig redaktorius</h1>
+      <label>Veikėjas <select id="char"></select></label>
+      <span id="status" class="note"></span>
+    </header>
+    <main>
+      <div>
+        <div class="stage-wrap"><div class="stage" id="stage"></div><div class="pins" id="pins"></div></div>
+        <p class="note">Pasirinkite sluoksnį dešinėje ir spustelėkite ant veikėjo – ten bus jo sukimosi taškas (petys, kaklas, pėdos…).</p>
+      </div>
+      <div>
+        <section>
+          <h2>Būsenos</h2>
+          <div class="btns">
+            <button data-state="idle">idle</button><button data-state="think">think</button>
+            <button data-play="happy">happy</button><button data-play="encourage">encourage</button>
+            <button data-play="wiggle">wiggle</button><button id="talk">talk (2 s)</button>
+            <button class="primary" id="demo">▶ Auto demonstracija</button>
+          </div>
+          <p class="note" id="demoNow"></p>
+        </section>
+        <section>
+          <h2>Sluoksniai <span class="note">(tvarka = piešimo tvarka)</span></h2>
+          <div class="layers" id="layers"></div>
+          <div id="test">
+            <div class="row"><span>rotate</span><input type="range" id="rot" min="-90" max="90" value="0" /><output id="rotv">0°</output></div>
+            <div class="row"><span>translateY</span><input type="range" id="ty" min="-20" max="20" step="0.5" value="0" /><output id="tyv">0%</output></div>
+            <p class="note">Slankikliai – tik patikrinti, ar sluoksnis sukasi natūraliai (neišsaugoma).</p>
+          </div>
+        </section>
+        <section>
+          <h2>Tuning</h2>
+          <div id="tuning"></div>
+        </section>
+        <section>
+          <h2>Eksportas</h2>
+          <div class="btns">
+            <button class="primary" id="save">Išsaugoti į projektą</button>
+            <button id="download">Atsisiųsti JSON</button>
+            <button id="copy">Kopijuoti</button>
+          </div>
+          <p class="note" id="saveNote"></p>
+          <textarea id="json" spellcheck="false"></textarea>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="/src/rig-editor/editor.js"></script>
+  </body>
+</html>

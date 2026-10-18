@@ -1,0 +1,69 @@
+{
+  "name": "kestas",
+  "canvas": 1024,
+  "layers": [
+    {
+      "id": "tail",
+      "file": "tail.webp",
+      "pivot": [
+        0.351,
+        0.74
+      ],
+      "parent": "body"
+    },
+    {
+      "id": "body",
+      "file": "body.webp",
+      "pivot": [
+        0.571,
+        0.92
+      ]
+    },
+    {
+      "id": "head",
+      "file": "head.webp",
+      "pivot": [
+        0.551,
+        0.53
+      ],
+      "parent": "body"
+    },
+    {
+      "id": "eyes",
+      "files": {
+        "open": "eyes_open.webp",
+        "closed": "eyes_closed.webp",
+        "up": "eyes_up.webp"
+      },
+      "parent": "head"
+    },
+    {
+      "id": "mouth",
+      "files": {
+        "smile": "mouth_smile.webp",
+        "open": "mouth_open.webp",
+        "o": "mouth_o.webp"
+      },
+      "parent": "head"
+    },
+    {
+      "id": "arm_right",
+      "file": "arm_right.webp",
+      "pivot": [
+        0.361,
+        0.585
+      ],
+      "parent": "body"
+    },
+    {
+      "id": "arm_left",
+      "file": "arm_left.webp",
+      "pivot": [
+        0.751,
+        0.6
+      ],
+      "parent": "body"
+    }
+  ],
+  "tuning": {}
+}

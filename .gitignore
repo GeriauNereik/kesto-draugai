@@ -1,0 +1,12 @@
+node_modules
+dist
+.DS_Store
+.venv-regina
+dist-artifact
+dist-artifact
+*.zip
+balso-bandymai/
+.claude/
+# Trečiųjų šalių kirčiavimo žodynas (didelis, kita licencija) – laikomas tik vietoje
+scripts/regina/krapas_text/
+__pycache__/

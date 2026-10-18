@@ -1,0 +1,60 @@
+{
+  "name": "ona",
+  "canvas": 1024,
+  "layers": [
+    {
+      "id": "body",
+      "file": "body.webp",
+      "pivot": [
+        0.5,
+        0.93
+      ]
+    },
+    {
+      "id": "head",
+      "file": "head.webp",
+      "pivot": [
+        0.5,
+        0.52
+      ],
+      "parent": "body"
+    },
+    {
+      "id": "eyes",
+      "files": {
+        "open": "eyes_open.webp",
+        "closed": "eyes_closed.webp",
+        "up": "eyes_up.webp"
+      },
+      "parent": "head"
+    },
+    {
+      "id": "mouth",
+      "files": {
+        "smile": "mouth_smile.webp",
+        "open": "mouth_open.webp",
+        "o": "mouth_o.webp"
+      },
+      "parent": "head"
+    },
+    {
+      "id": "arm_right",
+      "file": "arm_right.webp",
+      "pivot": [
+        0.29,
+        0.5
+      ],
+      "parent": "body"
+    },
+    {
+      "id": "arm_left",
+      "file": "arm_left.webp",
+      "pivot": [
+        0.71,
+        0.5
+      ],
+      "parent": "body"
+    }
+  ],
+  "tuning": {}
+}

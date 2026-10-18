@@ -1,0 +1,69 @@
+{
+  "name": "tadas",
+  "canvas": 1024,
+  "layers": [
+    {
+      "id": "tail",
+      "file": "tail.webp",
+      "pivot": [
+        0.298,
+        0.55
+      ],
+      "parent": "body"
+    },
+    {
+      "id": "body",
+      "file": "body.webp",
+      "pivot": [
+        0.448,
+        0.93
+      ]
+    },
+    {
+      "id": "head",
+      "file": "head.webp",
+      "pivot": [
+        0.578,
+        0.445
+      ],
+      "parent": "body"
+    },
+    {
+      "id": "eyes",
+      "files": {
+        "open": "eyes_open.webp",
+        "closed": "eyes_closed.webp",
+        "up": "eyes_up.webp"
+      },
+      "parent": "head"
+    },
+    {
+      "id": "mouth",
+      "files": {
+        "smile": "mouth_smile.webp",
+        "open": "mouth_open.webp",
+        "o": "mouth_o.webp"
+      },
+      "parent": "head"
+    },
+    {
+      "id": "ear_right",
+      "file": "ear_right.webp",
+      "pivot": [
+        0.463,
+        0.26
+      ],
+      "parent": "head"
+    },
+    {
+      "id": "ear_left",
+      "file": "ear_left.webp",
+      "pivot": [
+        0.668,
+        0.235
+      ],
+      "parent": "head"
+    }
+  ],
+  "tuning": {}
+}
