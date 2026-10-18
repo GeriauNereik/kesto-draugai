@@ -3904,3 +3904,36 @@ input {
   font-weight: 600;
   margin-bottom: 10px !important;
 }
+
+/* Maži lygių mygtukai (pvz. Miško bėgimo veikėjai): po 3 eilutėje */
+.level-compact .level-opts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: min(100%, 520px);
+}
+.level-compact .level-btn {
+  min-height: 0;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 6px 12px;
+  font-size: 1rem;
+}
+.level-compact .lvl-preview {
+  flex-direction: column;
+  gap: 4px;
+}
+.level-compact .lvl-img {
+  width: 54px;
+  height: 54px;
+}
+.level-compact .lvl-tile {
+  min-width: 0;
+  height: 26px;
+  line-height: 26px;
+  font-size: 0.95rem;
+  padding: 0 8px;
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .level-compact .level-opts { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .level-compact .lvl-img { width: 44px; height: 44px; }
+}

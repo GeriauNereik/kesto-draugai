@@ -130,6 +130,7 @@ export const PLAY_GAMES = [
     char: 'veja',
     title: 'Miško bėgimas',
     icon: 'run',
+    compact: true, // maži veikėjų mygtukai (po 3 eilutėje)
     // Lygis = kuriuo veikėju bėgama; rekordas bendras žaidėjui.
     levels: RUNNERS.map(({ id, label }) => ({ label, img: charPortrait(id), tiles: () => [`🏆 ${getRecord('runner')}`] })),
   },

@@ -19,10 +19,10 @@ const GAME = 'runner';
 
 // Kliūtys: daiktų piešiniai ir keli nupiešti (kelmas, akmuo). h – aukštis veikėjo dydžiais.
 const ITEM_OBSTACLES = [
-  { img: 'musmire', h: 0.55 },
-  { img: 'kankorezis', h: 0.42 },
-  { img: 'sraige', h: 0.4 },
-  { img: 'lizdas', h: 0.38 },
+  { img: 'musmire', h: 0.5 }, // aukštis – matomos (nukirptos) dalies, veikėjo dydžiais
+  { img: 'kankorezis', h: 0.4 },
+  { img: 'sraige', h: 0.3 },
+  { img: 'lizdas', h: 0.28 },
 ];
 const DRAWN = ['stump', 'rock', 'stumpTall'];
 
@@ -39,8 +39,48 @@ function points(n) {
 function loadImg(src) {
   const img = new Image();
   img.decoding = 'async';
+  img.addEventListener('load', () => (img.box = opaqueBox(img)));
   img.src = src;
   return img;
+}
+
+/** Nepermatomos dalies ribos (piešiniuose yra tuščių kraštų – be jų veikėjai ir kliūtys „kabotų“ virš žemės). */
+function opaqueBox(img) {
+  const full = { sx: 0, sy: 0, sw: img.naturalWidth, sh: img.naturalHeight };
+  try {
+    const n = 128; // pakanka – tikslumas ~1 %
+    const c = document.createElement('canvas');
+    c.width = n;
+    c.height = n;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0, n, n);
+    const d = g.getImageData(0, 0, n, n).data;
+    let x0 = n, y0 = n, x1 = -1, y1 = -1;
+    for (let y = 0; y < n; y++) {
+      for (let x = 0; x < n; x++) {
+        if (d[(y * n + x) * 4 + 3] > 40) {
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
+        }
+      }
+    }
+    if (x1 < 0) return full;
+    const k = img.naturalWidth / n;
+    const kh = img.naturalHeight / n;
+    return { sx: x0 * k, sy: y0 * kh, sw: (x1 - x0 + 1) * k, sh: (y1 - y0 + 1) * kh };
+  } catch {
+    return full;
+  }
+}
+
+/** Piešia nukirptą paveikslėlį: apačios centras taške (cx, bottom), aukštis hh. Grąžina plotį. */
+function drawTrimmed(ctx, img, cx, bottom, hh) {
+  const b = img.box || { sx: 0, sy: 0, sw: img.naturalWidth, sh: img.naturalHeight };
+  const ww = (hh * b.sw) / b.sh;
+  ctx.drawImage(img, b.sx, b.sy, b.sw, b.sh, cx - ww / 2, bottom - hh, ww, hh);
+  return ww;
 }
 
 export function runnerGame(root, { level, onHome }) {
@@ -175,7 +215,8 @@ export function runnerGame(root, { level, onHome }) {
     const item = ITEM_OBSTACLES.find((o) => o.img === kind);
     if (item) {
       const hh = size * item.h;
-      return { kind: 'item', img: kind, w: hh, h: hh };
+      const b = items[kind].box;
+      return { kind: 'item', img: kind, w: b ? (hh * b.sw) / b.sh : hh, h: hh };
     }
     if (kind === 'stump') return { kind, w: size * 0.42, h: size * 0.5 };
     if (kind === 'stumpTall') return { kind, w: size * 0.36, h: size * 0.78 };
@@ -328,7 +369,7 @@ export function runnerGame(root, { level, onHome }) {
     const top = ground - o.h;
     if (o.kind === 'item') {
       const img = items[o.img];
-      if (img.complete && img.naturalWidth) ctx.drawImage(img, o.x, top, o.w, o.h);
+      if (img.complete && img.naturalWidth) drawTrimmed(ctx, img, o.x + o.w / 2, ground + 1, o.h);
       else roundRect(o.x, top, o.w, o.h, 8, '#e5533d');
       return;
     }
@@ -392,7 +433,7 @@ export function runnerGame(root, { level, onHome }) {
     ctx.translate(x + size / 2, ground - y - bob);
     ctx.rotate(tilt);
     ctx.scale(who.flip ? -1 : 1, squash);
-    ctx.drawImage(hero, -size / 2, -size, size, size);
+    drawTrimmed(ctx, hero, 0, 1, size * 0.92); // +1 px – kojos ant žolės, ne virš jos
     ctx.restore();
   }
 

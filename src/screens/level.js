@@ -32,7 +32,7 @@ export function levelScreen(root, { game, onLevel, onHome }) {
   };
 
   root.append(
-    h('section', { class: `screen level${many ? ' level-many' : ''}` }, [
+    h('section', { class: `screen level${many ? ' level-many' : ''}${game.compact ? ' level-compact' : ''}` }, [
       h('header', { class: 'topbar' }, [
         iconButton({ icon: 'home', ariaLabel: 'Atgal', onClick: onHome }),
         many ? h('h1', { class: 'level-title', text: game.title }) : null,
