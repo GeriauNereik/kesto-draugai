@@ -9,7 +9,10 @@
 import { FIREBASE } from './config.js';
 
 const AUTH_KEY = 'kd.cloud.auth';
-export const enabled = !!FIREBASE.apiKey;
+// Vietiniai bandymai (localhost) į admin panelę nesiunčiami – kad ten būtų tik tikri telefonai.
+// Prireikus išbandyti sinchronizaciją vietoje: pridėti ?sync prie adreso.
+const LOCAL = /^(localhost|127\.0\.0\.1|\[::1\]|.*\.local)$/.test(location.hostname) && !/[?&]sync\b/.test(location.search);
+export const enabled = !!FIREBASE.apiKey && !LOCAL;
 const DOCS = `https://firestore.googleapis.com/v1/projects/${FIREBASE.projectId}/databases/(default)/documents`;
 
 let auth = read(AUTH_KEY); // { uid, idToken, refreshToken, exp }
