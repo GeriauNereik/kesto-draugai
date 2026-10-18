@@ -66,7 +66,7 @@ function bestMove(b) {
 }
 
 /** Vėjos ėjimas pagal lygio „protą“. */
-export function aiMove(b, { ai, mistakes = 0 }) {
+export function aiMove(b, { ai, mistakes = 0, block: blockChance = 0.6 }) {
   const free = empty(b);
   const random = () => free[randInt(0, free.length - 1)];
   if (ai === 'random') return random();
@@ -74,7 +74,7 @@ export function aiMove(b, { ai, mistakes = 0 }) {
     const win = winningMove(b, O);
     if (win !== null) return win;
     const block = winningMove(b, X);
-    if (block !== null && Math.random() < 0.6) return block;
+    if (block !== null && Math.random() < blockChance) return block;
     return random();
   }
   if (Math.random() < mistakes && free.length > 2) return random();

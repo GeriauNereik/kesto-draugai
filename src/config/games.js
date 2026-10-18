@@ -47,10 +47,17 @@ export const memorySeconds = (pairs) => 15 + pairs * 10;
 // Kryžiukai-nuliukai: kaip protingai žaidžia Vėja; lygyje – TTT_GAMES partijos.
 export const TTT_GAMES = 3;
 export const TTT_LEVELS = [
-  { label: 'Lengvas', ai: 'random' },
-  { label: 'Vidutinis', ai: 'basic' },
+  // ai: random – atsitiktinai; basic – laimi, jei gali, ir kartais užblokuoja (block – tikimybė);
+  // smart – visada laimi/blokuoja, renkasi centrą ir kampus; perfect – nepralaimi.
+  // mistakes – tikimybė, kad Vėja padarys atsitiktinį (klaidingą) ėjimą.
+  { label: 'Mažylis', ai: 'random' },
+  { label: 'Lengvas', ai: 'basic', block: 0.3 },
+  { label: 'Vidutinis', ai: 'basic', block: 0.7 },
+  { label: 'Gudrus', ai: 'smart', mistakes: 0.35 },
   { label: 'Sunkus', ai: 'smart', mistakes: 0.15 },
-  { label: 'Čempionas', ai: 'perfect', mistakes: 0.05 },
+  { label: 'Labai sunkus', ai: 'perfect', mistakes: 0.25 },
+  { label: 'Meistras', ai: 'perfect', mistakes: 0.12 },
+  { label: 'Čempionas', ai: 'perfect', mistakes: 0.04 },
 ];
 
 // Laikrodis: kokiu tikslumu rodomas laikas.
