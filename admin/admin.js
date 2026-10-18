@@ -165,13 +165,27 @@ function watch() {
   unsubs.push(() => clearInterval(t));
 }
 
-function note(text) {
+function note(text, error = false) {
   const n = $('#bulk-note');
   n.textContent = text;
+  n.classList.toggle('bad', error);
   n.hidden = false;
+  n.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   clearTimeout(note.t);
   note.t = setTimeout(() => (n.hidden = true), 6000);
 }
+
+/** Veiksmas su Firebase: pavykus – pranešimas, nepavykus – klaida (o ne tyla). */
+async function act(fn, ok) {
+  try {
+    await fn();
+    if (ok) note(ok);
+  } catch (e) {
+    console.error(e);
+    note(`Nepavyko: ${e.code === 'permission-denied' ? 'nėra teisių (ar prisijungta admin paskyra?)' : e.message}`, true);
+  }
+}
+const CODE_HINT = 'Kodas turi būti iš 3–8 skaitmenų.';
 
 // ---------- Kodas visiems ----------
 // Raktas '*' – „visi šio telefono žaidėjai“ (tekstiniame kelyje '*' neleidžiamas, todėl FieldPath).
@@ -180,20 +194,18 @@ $('#bulk').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const f = new FormData(ev.target);
   const code = String(f.get('code') || '').replace(/\D/g, '');
-  if (code.length < 3) return note('Kodas turi būti bent 3 skaitmenų.');
+  if (code.length < 3) return note(CODE_HINT, true);
   if (!devices.size) return note('Telefonų dar nėra.');
   const lock = { code, msg: String(f.get('msg') || '').trim(), at: Date.now() };
   const b = writeBatch(db);
   for (const id of devices.keys()) b.update(doc(db, 'devices', id), ALL, lock);
-  await b.commit();
-  note(`Užrakinta ${devices.size} telefonų(-ai) kodu ${code}.`);
+  await act(() => b.commit(), `Užrakinta telefonų: ${devices.size}. Kodas ${code}.`);
 });
 $('#bulk-clear').addEventListener('click', async () => {
   if (!devices.size) return;
   const b = writeBatch(db);
   for (const id of devices.keys()) b.update(doc(db, 'devices', id), { locks: deleteField() });
-  await b.commit();
-  note('Užraktai nuimti visiems telefonams.');
+  await act(() => b.commit(), 'Užraktai nuimti visiems telefonams.');
 });
 
 // ---------- Vienas telefonas ----------
@@ -226,13 +238,16 @@ function deviceRow(uid, entry) {
   const submit = async (ev) => {
     ev.preventDefault();
     const v = code.value.replace(/\D/g, '');
-    if (v.length < 3) return code.focus();
-    await setLock(uid, v, msg.value.trim());
+    if (v.length < 3) {
+      note(CODE_HINT, true);
+      return code.focus();
+    }
     drafts.delete(uid);
+    await act(() => setLock(uid, v, msg.value.trim()), `Užrakinta: ${dev.label || dev.device || 'telefonas'}, kodas ${v}.`);
   };
   const label = el('input', {
     'data-id': `${uid}:label`, class: 'name-input', value: dev.label || '', placeholder: dev.device || 'Įrenginys', 'aria-label': 'Telefono pavadinimas', title: 'Spausk ir pervadink',
-    onchange: (e) => rename(uid, e.target.value.trim()),
+    onchange: (e) => act(() => rename(uid, e.target.value.trim())),
     onkeydown: (e) => e.key === 'Enter' && e.target.blur(),
   });
 
@@ -255,7 +270,7 @@ function deviceRow(uid, entry) {
       el('form', { class: 'lock-form', onsubmit: submit },
         code, msg,
         el('button', { type: 'submit' }, lock.on ? 'Pakeisti' : 'Užrakinti'),
-        lock.on ? el('button', { type: 'button', class: 'ghost', onclick: () => clearLock(uid) }, 'Nuimti') : null)),
+        lock.on ? el('button', { type: 'button', class: 'ghost', onclick: () => act(() => clearLock(uid), 'Užraktas nuimtas.') }, 'Nuimti') : null)),
     el('details', { class: 'd-more', open: open.has(uid) || null, ontoggle: (e) => (e.target.open ? open.add(uid) : open.delete(uid)) },
       el('summary', {}, 'Veikla ir statistika'),
       details(uid, entry, days, profiles, daySec))
@@ -286,20 +301,26 @@ function details(uid, entry, days, profiles, daySec) {
       : el('p', { class: 'muted' }, 'Per 7 dienas veiklos nėra.'),
     el('button', {
       class: 'ghost danger',
-      onclick: () => window.confirm('Pašalinti šį telefoną iš sąrašo? Jei programėlė vėl bus atidaryta, jis atsiras iš naujo.') && deleteDoc(doc(db, 'devices', uid)),
+      onclick: () => window.confirm('Pašalinti šį telefoną iš sąrašo? Jei programėlė vėl bus atidaryta, jis atsiras iš naujo.') && act(() => deleteDoc(doc(db, 'devices', uid)), 'Telefonas pašalintas iš sąrašo.'),
     }, 'Pašalinti iš sąrašo')
   );
 }
 
 // ---------- Piešimas ----------
 let pending = false;
+// Kol pelė nuspausta ant sąrašo (ir trumpai po to), neperpiešiam – kitaip mygtukas būtų pakeistas
+// nauju dar prieš „click“, ir paspaudimas dingtų.
+let holdUntil = 0;
+document.addEventListener('pointerdown', (e) => $('#devices').contains(e.target) && (holdUntil = Infinity), true);
+document.addEventListener('pointerup', () => holdUntil !== 0 && ((holdUntil = Date.now() + 400), setTimeout(render, 450)), true);
 function render() {
+  if (Date.now() < holdUntil) return;
   // Nepiešiam iš naujo, kol admin rašo – kitaip dingtų žymeklis.
   const a = document.activeElement;
   if (a && a.tagName === 'INPUT' && $('#devices').contains(a)) {
     if (!pending) {
       pending = true;
-      a.addEventListener('blur', () => ((pending = false), setTimeout(render, 0)), { once: true });
+      a.addEventListener('blur', () => ((pending = false), setTimeout(render, 450)), { once: true });
     }
     return;
   }
@@ -332,4 +353,5 @@ function demo() {
   ));
   devices.set('c', mk({ device: 'iPhone', lastSeen: now - 20_000, firstSeen: now - 600_000, profiles: {} }, () => ({})));
   render();
+  setInterval(render, 1500); // kaip tikri atnaujinimai iš telefonų – kad matytųsi, jog rašymas ir mygtukai netrukdomi
 }

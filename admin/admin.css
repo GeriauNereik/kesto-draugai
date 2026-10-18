@@ -127,3 +127,4 @@ button.danger { color: var(--warn); border-color: #f1cdc5; justify-self: start; 
 @media (max-width: 760px) {
   .device { grid-template-columns: 1fr; }
 }
+.note.bad { background: var(--warn-soft); color: var(--warn); }
