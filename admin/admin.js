@@ -27,11 +27,31 @@ const el = (tag, attrs = {}, ...kids) => {
 
 // ---------- Formatavimas ----------
 const DAYS = 7;
+const WEEKS_KEPT = 8; // kiek savaičių atgal galima peržiūrėti
 const ONLINE = 150_000; // programėlė atsiliepia kas minutę, kol atidaryta
 const NEW = 24 * 3600_000;
 const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const lastDays = () => Array.from({ length: DAYS }, (_, i) => dayKey(new Date(Date.now() - i * 864e5)));
-const WEEKDAY = ['Sk', 'Pr', 'An', 'Tr', 'Kt', 'Pn', 'Št'];
+// Lietuvoje savaitė – nuo pirmadienio iki sekmadienio.
+function monday(offsetWeeks = 0) {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + offsetWeeks * 7);
+  return d;
+}
+/** Savaitės dienos (pirmadienis…sekmadienis); 0 – ši savaitė, −1 – praėjusi ir t. t. */
+function weekDays(offsetWeeks = 0) {
+  const m = monday(offsetWeeks);
+  return Array.from({ length: DAYS }, (_, i) => dayKey(new Date(m.getFullYear(), m.getMonth(), m.getDate() + i, 12)));
+}
+const WEEKDAY = ['Pr', 'An', 'Tr', 'Kt', 'Pn', 'Št', 'Sk'];
+let weekOffset = 0;
+const shortDate = (key) => `${key.slice(5, 7)}-${key.slice(8, 10)}`;
+function weekTitle(off = weekOffset) {
+  if (off === 0) return 'Ši savaitė';
+  if (off === -1) return 'Praėjusi savaitė';
+  const d = weekDays(off);
+  return `${shortDate(d[0])} – ${shortDate(d[6])}`;
+}
 const dur = (sec) => {
   const m = Math.round((sec || 0) / 60);
   if (!m) return '0 min.';
@@ -138,8 +158,8 @@ function watch() {
             entry = { data: null, days: {} };
             devices.set(d.id, entry);
             entry.unsub = onSnapshot(
-              // Paskutinės 7 dienos: id >= seniausios dienos (didėjanti tvarka – nereikia papildomo indekso)
-              query(collection(db, 'devices', d.id, 'days'), where(documentId(), '>=', lastDays()[DAYS - 1])),
+              // Paskutinės WEEKS_KEPT savaitės: id >= seniausio pirmadienio (didėjanti tvarka – nereikia papildomo indekso)
+              query(collection(db, 'devices', d.id, 'days'), where(documentId(), '>=', weekDays(-(WEEKS_KEPT - 1))[0])),
               (ds) => {
                 entry.days = {};
                 ds.forEach((x) => (entry.days[x.id] = x.data()));
@@ -168,6 +188,14 @@ function watch() {
   // Kas 30 s atnaujinam „prieš 3 min.“, „prisijungęs“ ir pan.
   const t = setInterval(render, 30_000);
   unsubs.push(() => clearInterval(t));
+}
+
+// ---------- Savaitės perjungimas ----------
+function weekNav() {
+  const prev = el('button', { class: 'ghost wk-btn', 'aria-label': 'Ankstesnė savaitė', disabled: weekOffset <= -(WEEKS_KEPT - 1) || null, onclick: () => ((weekOffset -= 1), render()) }, '‹');
+  const next = el('button', { class: 'ghost wk-btn', 'aria-label': 'Kita savaitė', disabled: weekOffset >= 0 || null, onclick: () => ((weekOffset += 1), render()) }, '›');
+  const d = weekDays(weekOffset);
+  return el('div', { class: 'week-nav' }, prev, el('span', {}, el('b', {}, weekTitle()), el('small', {}, ` ${shortDate(d[0])} – ${shortDate(d[6])}`)), next);
 }
 
 function note(text, error = false) {
@@ -231,11 +259,11 @@ const rename = (uid, label) => updateDoc(doc(db, 'devices', uid), { label: label
 
 function deviceRow(uid, entry) {
   const dev = entry.data || {};
-  const days = lastDays();
+  const days = weekDays(weekOffset);
   const profiles = Object.entries(dev.profiles || {});
   const sec = (d, pid) => entry.days[d]?.p?.[pid]?.sec || 0;
   const daySec = (d) => profiles.reduce((a, [pid]) => a + sec(d, pid), 0) || Object.values(entry.days[d]?.p || {}).reduce((a, x) => a + (x.sec || 0), 0);
-  const today = daySec(days[0]);
+  const today = daySec(dayKey(new Date()));
   const week = days.reduce((a, d) => a + daySec(d), 0);
   const online = dev.lastSeen && Date.now() - dev.lastSeen < ONLINE;
   const isNew = dev.firstSeen && Date.now() - dev.firstSeen < NEW;
@@ -277,7 +305,7 @@ function deviceRow(uid, entry) {
       el('div', { class: 'd-stats' },
         el('span', {}, el('b', {}, profiles.length ? profiles.map(([, p]) => p.name).join(', ') : 'Žaidėjų dar nėra')),
         el('span', {}, 'Šiandien ', el('b', {}, dur(today))),
-        el('span', {}, '7 d. ', el('b', {}, dur(week))),
+        el('span', {}, `${weekOffset === 0 ? 'Šią savaitę' : weekTitle()}: `, el('b', {}, dur(week))),
         el('span', { class: 'muted' }, online ? 'Atidaryta dabar' : `Matytas ${ago(dev.lastSeen)}`))),
     el('div', { class: 'd-lock' },
       lock.on
@@ -301,10 +329,12 @@ function details(uid, entry, days, profiles, daySec) {
     .sort((a, b) => b.t - a.t)
     .slice(0, 60);
   return el('div', { class: 'more' },
-    el('div', { class: 'bars', 'aria-label': 'Žaista per 7 dienas' }, days.slice().reverse().map((d) => {
+    el('div', { class: 'bars', 'aria-label': `Žaista: ${weekTitle()}` }, days.map((d, i) => {
       const s = daySec(d);
-      const wd = WEEKDAY[new Date(`${d}T12:00`).getDay()];
-      return el('div', { class: 'bar', title: `${d}: ${dur(s)}` },
+      const wd = WEEKDAY[i];
+      const future = d > dayKey(new Date());
+      const isToday = d === dayKey(new Date());
+      return el('div', { class: `bar${future ? ' future' : ''}${isToday ? ' today' : ''}`, title: `${d}: ${dur(s)}` },
         el('em', {}, s ? `${Math.round(s / 60)}` : ''),
         el('span', { style: `height:${Math.round((s / max) * 100)}%` }),
         el('small', {}, wd));
@@ -314,7 +344,7 @@ function details(uid, entry, days, profiles, daySec) {
           el('time', {}, when(e.t)),
           profiles.length > 1 && e.who ? el('b', {}, e.who) : null,
           el('span', {}, describe(e)))))
-      : el('p', { class: 'muted' }, 'Per 7 dienas veiklos nėra.'),
+      : el('p', { class: 'muted' }, `${weekTitle()}: veiklos nėra.`),
     el('button', {
       class: 'ghost danger',
       onclick: () => window.confirm('Pašalinti šį telefoną iš sąrašo? Jei programėlė vėl bus atidaryta, jis atsiras iš naujo.') && act(() => removeDevice(uid), 'Telefonas pašalintas iš sąrašo.'),
@@ -342,7 +372,7 @@ function render() {
   const online = list.filter(([, e]) => Date.now() - (e.data.lastSeen || 0) < ONLINE).length;
   const locked = list.filter(([, e]) => lockInfo(e.data).on).length;
   $('#summary').textContent = `${list.length} telefonai · ${online} atidaryti · ${locked} užrakinti`;
-  $('#list-count').textContent = list.length ? '' : '';
+  $('#list-count').replaceChildren(weekNav());
   const box = $('#devices');
   if (editing && editing.isConnected) {
     // Redaguojant – keičiam eilutes po vieną, redaguojamos neliečiam (kitaip dingtų fokusas).
@@ -368,7 +398,7 @@ function demo() {
   $('#login').hidden = true;
   $('#app').hidden = false;
   const now = Date.now();
-  const days = lastDays();
+  const days = Array.from({ length: DAYS }, (_, i) => dayKey(new Date(now - i * 864e5))); // šiandien ir 6 ankstesnės
   const ev = (t, k, n, l, st, d) => ({ t, k, n, l, s: st, d });
   const mk = (data, perDay) => ({ data, days: Object.fromEntries(days.map((d, i) => [d, { p: perDay(i) }])) });
   devices.set('a', mk(

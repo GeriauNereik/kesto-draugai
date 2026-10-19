@@ -128,3 +128,12 @@ button.danger { color: var(--warn); border-color: #f1cdc5; justify-self: start; 
   .device { grid-template-columns: 1fr; }
 }
 .note.bad { background: var(--warn-soft); color: var(--warn); }
+
+/* Savaitės perjungiklis ir stulpeliai */
+.week-nav { display: flex; align-items: center; gap: 8px; color: var(--ink); }
+.week-nav small { color: var(--muted); }
+.wk-btn { padding: 4px 12px; font-size: 1.1rem; line-height: 1; }
+.wk-btn:disabled { opacity: 0.35; cursor: default; }
+.bar.future span { background: transparent; }
+.bar.future small { opacity: 0.45; }
+.bar.today small { color: var(--accent); font-weight: 700; }
