@@ -3,7 +3,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import {
-  getFirestore, collection, doc, onSnapshot, query, orderBy, limit, documentId, updateDoc, deleteField, deleteDoc, getDocs, FieldPath,
+  getFirestore, collection, doc, onSnapshot, query, where, documentId, updateDoc, deleteField, deleteDoc, getDocs, FieldPath,
 } from 'firebase/firestore';
 import { FIREBASE, ADMIN_EMAIL } from '../src/sync/config.js';
 
@@ -138,7 +138,8 @@ function watch() {
             entry = { data: null, days: {} };
             devices.set(d.id, entry);
             entry.unsub = onSnapshot(
-              query(collection(db, 'devices', d.id, 'days'), orderBy(documentId(), 'desc'), limit(DAYS)),
+              // Paskutinės 7 dienos: id >= seniausios dienos (didėjanti tvarka – nereikia papildomo indekso)
+              query(collection(db, 'devices', d.id, 'days'), where(documentId(), '>=', lastDays()[DAYS - 1])),
               (ds) => {
                 entry.days = {};
                 ds.forEach((x) => (entry.days[x.id] = x.data()));
