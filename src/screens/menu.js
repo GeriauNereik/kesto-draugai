@@ -11,10 +11,23 @@ import { stagger, countUp, burst } from '../ui/fx.js';
 import { createCharacter } from '../character/character.js';
 
 let greeted = false;
+const GREET_KEY = 'kd.greetDay'; // kurią dieną Ona jau paklausė „Ką žaisime šiandien?“
+
+const todayKey = () => new Date().toDateString();
+/** true – šiandien dar neklausė (ir pažymim, kad jau paklausė). */
+function firstGreetToday() {
+  try {
+    if (localStorage.getItem(GREET_KEY) === todayKey()) return false;
+    localStorage.setItem(GREET_KEY, todayKey());
+  } catch {
+    /* be atminties – klausiam kaip anksčiau, vieną kartą per paleidimą */
+  }
+  return true;
+}
 
 export function menuScreen(root, { onPick, onParents, onSwitch, firstTime = false }) {
   const profile = currentProfile();
-  const host = character('ona', { emotion: 'happy', size: 'md', onTapChar: () => host.speak('phrases/labas') });
+  const host = character('ona', { emotion: 'happy', size: 'md', onTapChar: () => host.speak('phrases/ka_zaisime') });
 
   // Profilio ženklelis: avataras, vardas ir visos surinktos žvaigždutės ("stiklainis").
   const { total, seen } = jarInfo();
@@ -95,19 +108,18 @@ export function menuScreen(root, { onPick, onParents, onSwitch, firstTime = fals
     jarNum.textContent = total;
   }
 
-  if (firstTime) {
-    // Ką tik susipažinom (Ona jau pasakė „Malonu susipažinti“) – tik klausiam, ką žaisim.
+  // Ona balsu klausia tik pirmą kartą per dieną (ar ką tik susipažinus); kitais kartais – tik užrašas.
+  if (firstTime || (!greeted && firstGreetToday())) {
+    if (firstTime) firstGreetToday();
     greeted = true;
     host.speak('phrases/ka_zaisime', undefined, { delay: greetDelay });
-  } else if (!greeted) {
-    greeted = true;
-    host.speak('phrases/labas', undefined, { delay: greetDelay });
   } else {
-    host.show('Ką žaisime?');
+    greeted = true;
+    host.show('Ką žaisime šiandien?');
   }
 }
 
-/** Kai pasikeičia žaidėjas, Ona pasisveikina iš naujo. */
+/** Pasikeitus žaidėjui – vėl galima paklausti (bet balsu vis tiek tik kartą per dieną). */
 export function resetGreeting() {
   greeted = false;
 }
