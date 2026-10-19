@@ -1,21 +1,24 @@
 // „Miško bėgimas“ (kaip Chrome dinozauras): veikėjas bėga, vaikas bakstelėja – šoka per kliūtis.
 // Kuo ilgiau bėgi, tuo greičiau ir tankiau kliūtys. Rekordas saugomas žaidėjui ir visada matomas.
-// Lygis = kuriuo veikėju bėgama (žr. RUNNERS).
+// Pradžioje vaikas pasirenka vieną iš 4 šio žaidimo veikėjų; kiekvienas turi savo rekordą.
 import { h, onTap } from '../ui/dom.js';
 import { iconButton } from '../ui/button.js';
-import { charPortrait, itemImg } from '../config/characters.js';
+import { itemImg } from '../config/characters.js';
 import { getRecord, saveRecord } from '../storage.js';
 import { sfx } from '../sfx.js';
 import { track } from '../sync/activity.js';
 
+// Tik šio žaidimo veikėjai (public/assets/runner/*.webp, tas pats piešimo stilius).
 export const RUNNERS = [
-  { id: 'domas', label: 'Domas' },
-  { id: 'veja', label: 'Vėja' },
-  { id: 'tadas', label: 'Tadas' },
-  { id: 'kestas', label: 'Kęstas' },
-  { id: 'gedas', label: 'Gedas', flip: true }, // žiūri į kairę – apverčiam
+  { id: 'zuikis', label: 'Zuikis' },
+  { id: 'lapiukas', label: 'Lapiukas' },
+  { id: 'meskiukas', label: 'Meškiukas' },
+  { id: 'varliukas', label: 'Varliukas' },
 ];
+const runnerImg = (id) => `${import.meta.env.BASE_URL}assets/runner/${id}.webp`;
+const LAST_KEY = 'kd.runner.last';
 const GAME = 'runner';
+const recordKey = (id) => `${GAME}:${id}`;
 
 // Kliūtys: daiktų piešiniai ir keli nupiešti (kelmas, akmuo). h – aukštis veikėjo dydžiais.
 const ITEM_OBSTACLES = [
@@ -34,6 +37,21 @@ function points(n) {
   if (d === 1 && t !== 11) return 'taškas';
   if (d >= 2 && d <= 9 && (t < 12 || t > 19)) return 'taškai';
   return 'taškų';
+}
+
+function readLast() {
+  try {
+    return localStorage.getItem(LAST_KEY);
+  } catch {
+    return null;
+  }
+}
+function writeLast(id) {
+  try {
+    localStorage.setItem(LAST_KEY, id);
+  } catch {
+    /* be išsaugojimo */
+  }
 }
 
 function loadImg(src) {
@@ -83,9 +101,10 @@ function drawTrimmed(ctx, img, cx, bottom, hh) {
   return ww;
 }
 
-export function runnerGame(root, { level, onHome }) {
-  const who = RUNNERS[level - 1] || RUNNERS[0];
-  const hero = loadImg(charPortrait(who.id));
+export function runnerGame(root, { onHome }) {
+  const heroes = Object.fromEntries(RUNNERS.map((r) => [r.id, loadImg(runnerImg(r.id))]));
+  let who = RUNNERS.find((r) => r.id === readLast()) || RUNNERS[0];
+  let hero = heroes[who.id];
   const items = Object.fromEntries(ITEM_OBSTACLES.map((o) => [o.img, loadImg(itemImg(o.img))]));
 
   // ---------- Maketas ----------
@@ -94,7 +113,8 @@ export function runnerGame(root, { level, onHome }) {
   const scoreEl = h('span', { class: 'run-score' });
   const hint = h('div', { class: 'run-hint' }, [h('b', { text: 'Bakstelėk – šok!' }), h('span', { text: 'Šok per kliūtis. Kuo toliau, tuo greičiau.' })]);
   const over = h('div', { class: 'run-over', hidden: true });
-  const stage = h('div', { class: 'run-stage' }, [canvas, hint, over]);
+  const picker = h('div', { class: 'run-pick' });
+  const stage = h('div', { class: 'run-stage' }, [canvas, hint, over, picker]);
   const screen = h('section', { class: 'screen runner' }, [
     h('header', { class: 'topbar' }, [
       iconButton({ icon: 'home', ariaLabel: 'Atgal', onClick: onHome }),
@@ -121,12 +141,12 @@ export function runnerGame(root, { level, onHome }) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     size = Math.round(Math.min(H * 0.24, W * 0.24, 120));
     ground = Math.round(H * 0.8);
-    if (state === 'ready' || state === 'over') draw();
+    if (state !== 'run') draw();
   }
 
   // ---------- Būsena ----------
-  let state = 'ready'; // ready | run | over
-  let best = getRecord(GAME);
+  let state = 'pick'; // pick | ready | run | over
+  let best = 0;
   let score = 0;
   let speed = 0; // px/s
   let base = 0;
@@ -178,7 +198,46 @@ export function runnerGame(root, { level, onHome }) {
     raf = requestAnimationFrame(loop);
   }
 
+  // ---------- Veikėjo pasirinkimas ----------
+  function showPicker() {
+    state = 'pick';
+    cancelAnimationFrame(raf);
+    hint.hidden = true;
+    over.hidden = true;
+    picker.replaceChildren(
+      h('p', { class: 'run-pick-title', text: 'Kuo bėgsi?' }),
+      h(
+        'div',
+        { class: 'run-pick-grid' },
+        RUNNERS.map((r) => {
+          const b = h('button', { type: 'button', class: `run-pick-btn${r.id === who.id ? ' on' : ''}`, 'aria-label': `${r.label}, rekordas ${getRecord(recordKey(r.id))}` }, [
+            h('img', { src: runnerImg(r.id), alt: '', decoding: 'async' }),
+            h('b', { text: r.label }),
+            h('span', { class: 'run-pick-rec', text: `🏆 ${getRecord(recordKey(r.id))}` }),
+          ]);
+          onTap(b, () => choose(r));
+          return b;
+        })
+      )
+    );
+    picker.hidden = false;
+    draw();
+  }
+
+  function choose(r) {
+    who = r;
+    hero = heroes[r.id];
+    writeLast(r.id);
+    best = getRecord(recordKey(r.id));
+    picker.hidden = true;
+    state = 'ready';
+    hint.hidden = false;
+    reset();
+    draw();
+  }
+
   function jump() {
+    if (state === 'pick') return;
     if (state === 'ready') return start(), jump();
     if (state === 'over') {
       if (performance.now() - deadAt > 700) start();
@@ -295,18 +354,24 @@ export function runnerGame(root, { level, onHome }) {
     sfx('crash');
     navigator.vibrate?.(120);
     const final = Math.floor(score);
-    const isRecord = saveRecord(GAME, final);
+    const isRecord = saveRecord(recordKey(who.id), final);
     if (isRecord) best = final;
     showScores();
-    track({ k: 'run', g: GAME, n: 'Miško bėgimas', p: final, d: Math.round(elapsed) });
+    track({ k: 'run', g: GAME, n: `Miško bėgimas (${who.label})`, p: final, d: Math.round(elapsed) });
     const again = h('button', { type: 'button', class: 'btn btn-primary run-again' }, [h('span', { class: 'btn-label', text: 'Dar kartą' })]);
     onTap(again, () => start());
+    const other = h('button', { type: 'button', class: 'run-other' }, [
+      h('img', { src: runnerImg(who.id), alt: '' }),
+      h('span', { text: 'Kitas veikėjas' }),
+    ]);
+    onTap(other, showPicker);
     over.replaceChildren(
       h('div', { class: 'run-card' }, [
         h('p', { class: 'run-oi', text: isRecord && final > 0 ? 'Naujas rekordas!' : 'Oi!' }),
         h('p', { class: 'run-final' }, [h('b', { text: String(final) }), ` ${points(final)}`]),
         h('p', { class: 'run-best', text: `Rekordas: ${best}` }),
         again,
+        other,
       ])
     );
     over.hidden = false;
@@ -432,7 +497,7 @@ export function runnerGame(root, { level, onHome }) {
     ctx.save();
     ctx.translate(x + size / 2, ground - y - bob);
     ctx.rotate(tilt);
-    ctx.scale(who.flip ? -1 : 1, squash);
+    ctx.scale(1, squash);
     drawTrimmed(ctx, hero, 0, 1, size * 0.92); // +1 px – kojos ant žolės, ne virš jos
     ctx.restore();
   }
@@ -468,11 +533,11 @@ export function runnerGame(root, { level, onHome }) {
   const ro = 'ResizeObserver' in window ? new ResizeObserver(resize) : null;
   ro?.observe(canvas);
   window.addEventListener('resize', resize);
-  hero.onload = () => state !== 'run' && draw();
+  Object.values(heroes).forEach((img) => img.addEventListener('load', () => state !== 'run' && draw()));
 
   resize();
   reset();
-  draw();
+  showPicker();
 
   return () => {
     cancelAnimationFrame(raf);

@@ -123,7 +123,7 @@ const screens = {
     if (!currentProfile()) return screens.home();
     show(menuScreen, {
       firstTime,
-      onPick: (game) => (game.hub ? screens.hub(game) : screens.level(game)),
+      onPick: (game) => (game.hub ? screens.hub(game) : game.direct ? screens.game(game, 1) : screens.level(game)),
       onParents: screens.parents,
       onSwitch: screens.profiles,
     });
@@ -132,7 +132,7 @@ const screens = {
     show(parentsScreen, { onHome: screens.menu });
   },
   hub(hub) {
-    show(hubScreen, { hub, onHome: screens.menu, onPick: (game) => screens.level(game) });
+    show(hubScreen, { hub, onHome: screens.menu, onPick: (game) => (game.direct ? screens.game(game, 1) : screens.level(game)) });
   },
   /** Kur grįžti iš žaidimo: į jo skiltį (pvz. Matematika) arba į meniu. */
   back(game) {
@@ -150,7 +150,8 @@ const screens = {
       onHome: () => {
         // Bėgime išeinama visada per „Atgal“ (rezultatas jau užregistruotas žuvus).
         if (game.id !== 'runner') log('quit');
-        screens.level(game);
+        if (game.direct) screens.back(game)();
+        else screens.level(game);
       },
       onFinish({ mistakes = 0, stars, failed = false }) {
         breakDue = markGamePlayed();

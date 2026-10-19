@@ -1,7 +1,5 @@
 import { DRAW_CATEGORIES, ALL_DRAW_ITEMS } from './draw-items.js';
-import { getDrawDone, getRecord } from '../storage.js';
-import { RUNNERS } from '../games/runner.js';
-import { charPortrait } from './characters.js';
+import { getDrawDone } from '../storage.js';
 
 // Žaidimų sąrašas: meniu kortelės, matematikos skiltis ir kiekvieno žaidimo lygiai.
 // levels[i]: { label – mygtuko tekstas, tiles – mažas vaizdelis mygtuke, wide – platūs langeliai }.
@@ -130,9 +128,9 @@ export const PLAY_GAMES = [
     char: 'veja',
     title: 'Miško bėgimas',
     icon: 'run',
-    compact: true, // maži veikėjų mygtukai (po 3 eilutėje)
-    // Lygis = kuriuo veikėju bėgama; rekordas bendras žaidėjui.
-    levels: RUNNERS.map(({ id, label }) => ({ label, img: charPortrait(id), tiles: () => [`🏆 ${getRecord('runner')}`] })),
+    // Be lygių ekrano: veikėjas renkamas pačiame žaidime (žr. src/games/runner.js).
+    direct: true,
+    levels: [{ label: 'Bėgti' }],
   },
   {
     id: 'tictactoe',

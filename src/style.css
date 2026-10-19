@@ -3905,35 +3905,85 @@ input {
   margin-bottom: 10px !important;
 }
 
-/* Maži lygių mygtukai (pvz. Miško bėgimo veikėjai): po 3 eilutėje */
-.level-compact .level-opts {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+/* Miško bėgimas: veikėjo pasirinkimas */
+.run-pick {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(255, 246, 229, 0.82);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+.run-pick-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--brown);
+}
+.run-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  width: min(100%, 520px);
+  width: min(100%, 420px);
 }
-.level-compact .level-btn {
-  min-height: 0;
-  flex-direction: column;
-  gap: 4px;
+.run-pick-btn {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
   padding: 10px 6px 12px;
-  font-size: 1rem;
+  border: 3px solid transparent;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--brown);
+  font: inherit;
+  touch-action: manipulation;
 }
-.level-compact .lvl-preview {
-  flex-direction: column;
-  gap: 4px;
+.run-pick-btn.on {
+  border-color: var(--ochre);
 }
-.level-compact .lvl-img {
-  width: 54px;
-  height: 54px;
+.run-pick-btn:active {
+  transform: scale(0.96);
 }
-.level-compact .lvl-tile {
-  min-width: 0;
-  height: 26px;
-  line-height: 26px;
+.run-pick-btn img {
+  width: 100%;
+  max-width: 120px;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+.run-pick-btn b {
+  font-size: 1.15rem;
+}
+.run-pick-rec {
   font-size: 0.95rem;
-  padding: 0 8px;
+  font-weight: 700;
+  color: var(--brown-soft);
+  font-variant-numeric: tabular-nums;
 }
 @media (orientation: landscape) and (max-height: 520px) {
-  .level-compact .level-opts { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .level-compact .lvl-img { width: 44px; height: 44px; }
+  .run-pick-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); width: min(100%, 640px); }
+  .run-pick-btn img { max-width: 80px; }
+}
+.run-other {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 4px 12px 4px 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--brown);
+  font: inherit;
+  font-weight: 700;
+}
+.run-other img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
 }
