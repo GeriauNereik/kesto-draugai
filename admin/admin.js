@@ -143,7 +143,8 @@ function watch() {
                 entry.days = {};
                 ds.forEach((x) => (entry.days[x.id] = x.data()));
                 render();
-              }
+              },
+              (err) => note(`Nepavyko gauti statistikos: ${err.message}`, true)
             );
             if (!firstLoad) note(`Prisijungė naujas telefonas: ${d.data().device || 'įrenginys'}`);
           }
@@ -265,7 +266,7 @@ function deviceRow(uid, entry) {
     onkeydown: (e) => e.key === 'Enter' && e.target.blur(),
   });
 
-  const row = el('article', { class: `device${lock.on ? ' locked' : ''}` },
+  const row = el('article', { class: `device${lock.on ? ' locked' : ''}`, 'data-uid': uid },
     el('div', { class: 'd-main' },
       el('div', { class: 'd-name' },
         el('span', { class: `dot${online ? ' on' : ''}`, title: online ? 'Programėlė atidaryta' : 'Neprisijungęs' }),
@@ -321,31 +322,41 @@ function details(uid, entry, days, profiles, daySec) {
 }
 
 // ---------- Piešimas ----------
-let pending = false;
 // Kol pelė nuspausta ant sąrašo (ir trumpai po to), neperpiešiam – kitaip mygtukas būtų pakeistas
 // nauju dar prieš „click“, ir paspaudimas dingtų.
 let holdUntil = 0;
 document.addEventListener('pointerdown', (e) => $('#devices').contains(e.target) && (holdUntil = Infinity), true);
+// Baigus rašyti laukelyje – perpiešiam ir tą telefoną (jo duomenys galėjo pasikeisti).
+document.addEventListener('focusout', (e) => e.target.tagName === 'INPUT' && $('#devices').contains(e.target) && setTimeout(render, 450), true);
 const release = () => holdUntil !== 0 && ((holdUntil = Date.now() + 400), setTimeout(render, 450));
 document.addEventListener('pointerup', release, true);
 document.addEventListener('pointercancel', release, true); // slenkant liečiamu ekranu ateina cancel, ne up
 function render() {
   if (Date.now() < holdUntil) return;
-  // Nepiešiam iš naujo, kol admin rašo – kitaip dingtų žymeklis.
+  // Telefonas, kurio laukelyje admin dabar rašo, neperpiešiamas (kitaip dingtų žymeklis) –
+  // visi kiti atsinaujina iškart. Anksčiau sustodavo visa panelė, kol laukelis buvo aktyvus.
   const a = document.activeElement;
-  if (a && a.tagName === 'INPUT' && $('#devices').contains(a)) {
-    if (!pending) {
-      pending = true;
-      a.addEventListener('blur', () => ((pending = false), setTimeout(render, 450)), { once: true });
-    }
-    return;
-  }
+  const editing = a && a.tagName === 'INPUT' && $('#devices').contains(a) ? a.closest('.device') : null;
   const list = [...devices.entries()].filter(([, e]) => e.data).sort(([, a], [, b]) => (b.data.lastSeen || 0) - (a.data.lastSeen || 0));
   const online = list.filter(([, e]) => Date.now() - (e.data.lastSeen || 0) < ONLINE).length;
   const locked = list.filter(([, e]) => lockInfo(e.data).on).length;
   $('#summary').textContent = `${list.length} telefonai · ${online} atidaryti · ${locked} užrakinti`;
   $('#list-count').textContent = list.length ? '' : '';
-  $('#devices').replaceChildren(
+  const box = $('#devices');
+  if (editing && editing.isConnected) {
+    // Redaguojant – keičiam eilutes po vieną, redaguojamos neliečiam (kitaip dingtų fokusas).
+    const keep = new Set(list.map(([uid]) => uid));
+    box.querySelectorAll('.device').forEach((r) => !keep.has(r.dataset.uid) && r !== editing && r.remove());
+    for (const [uid, e] of list) {
+      const old = box.querySelector(`.device[data-uid="${uid}"]`);
+      if (old === editing) continue;
+      const row = deviceRow(uid, e);
+      if (old) old.replaceWith(row);
+      else box.append(row);
+    }
+    return;
+  }
+  box.replaceChildren(
     ...(list.length
       ? list.map(([uid, e]) => deviceRow(uid, e))
       : [el('p', { class: 'empty' }, 'Telefonų dar nėra. Atidarius programėlę telefone (su internetu), jis atsiras čia iškart.')])
