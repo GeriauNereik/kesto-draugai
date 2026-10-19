@@ -3818,11 +3818,7 @@ input {
 }
 .run-stage {
   position: relative;
-  flex: 0 1 auto;
-  /* Vertikaliame telefone – ne per aukštas (kitaip daug tuščio dangaus), centre */
-  height: 100%;
-  max-height: min(100%, 125vw);
-  margin-block: auto;
+  flex: 1 1 auto; /* visas likęs ekranas – be tuščio tarpo apačioje */
   min-height: 0;
   border-radius: var(--r-lg);
   overflow: hidden;
@@ -3986,4 +3982,10 @@ input {
   width: 36px;
   height: 36px;
   object-fit: contain;
+}
+/* Bėgime šokama bakstelėjus bet kur – be slinkimo ir priartinimo */
+.screen.runner {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }

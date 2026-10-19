@@ -140,7 +140,8 @@ export function runnerGame(root, { onHome }) {
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     size = Math.round(Math.min(H * 0.24, W * 0.24, 120));
-    ground = Math.round(H * 0.8);
+    // Žemė – apačioje (aukštame ekrane žemės juosta neišauga per daug)
+    ground = Math.round(H - Math.min(H * 0.2, Math.max(70, H * 0.12)));
     if (state !== 'run') draw();
   }
 
@@ -386,7 +387,41 @@ export function runnerGame(root, { onHome }) {
     drawHero();
   }
 
+  // Debesėliai (lėtai slenka) ir saulė – kad aukštame ekrane dangus nebūtų tuščias.
+  const clouds = Array.from({ length: 5 }, (_, i) => ({ x: Math.random(), y: 0.08 + i * 0.11 + Math.random() * 0.05, s: 0.7 + Math.random() * 0.6, v: 0.04 + Math.random() * 0.05 }));
+
+  function drawSky() {
+    const skyH = ground - size * 1.2;
+    // Saulė
+    const sx = W * 0.82;
+    const sy = Math.min(skyH * 0.18, 70);
+    const sr = Math.min(W, H) * 0.07;
+    ctx.fillStyle = 'rgba(255, 213, 79, 0.25)';
+    ctx.beginPath();
+    ctx.arc(sx, sy, sr * 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffd54f';
+    ctx.beginPath();
+    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+    ctx.fill();
+    // Debesys
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    for (const c of clouds) {
+      const span = W + 200;
+      const x = ((((c.x * span - scroll * c.v) % span) + span) % span) - 100;
+      const y = c.y * skyH;
+      const r = Math.min(W, H) * 0.05 * c.s;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.arc(x + r * 1.1, y - r * 0.45, r * 1.25, 0, Math.PI * 2);
+      ctx.arc(x + r * 2.3, y, r * 0.95, 0, Math.PI * 2);
+      ctx.rect(x, y, r * 2.3, r * 0.9);
+      ctx.fill();
+    }
+  }
+
   function drawBackground() {
+    drawSky();
     // Tolimi medžiai (lėtai slenka – gylio pojūtis)
     const far = scroll * 0.25;
     ctx.fillStyle = 'rgba(76, 185, 99, 0.18)';
@@ -509,7 +544,7 @@ export function runnerGame(root, { onHome }) {
     jump();
   };
   const up = () => (holding = false);
-  stage.addEventListener('pointerdown', down);
+  screen.addEventListener('pointerdown', down);
   window.addEventListener('pointerup', up);
   const key = (e) => {
     if (e.code === 'Space' || e.code === 'ArrowUp') {
