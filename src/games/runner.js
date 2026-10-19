@@ -8,12 +8,12 @@ import { getRecord, saveRecord } from '../storage.js';
 import { sfx } from '../sfx.js';
 import { track } from '../sync/activity.js';
 
-// Tik šio žaidimo veikėjai (public/assets/runner/*.webp, tas pats piešimo stilius).
+// Tik šio žaidimo veikėjai (public/assets/runner/*.webp) – vyresniems (~9 m.), jau nupiešti bėgantys.
 export const RUNNERS = [
-  { id: 'zuikis', label: 'Zuikis' },
-  { id: 'lapiukas', label: 'Lapiukas' },
-  { id: 'meskiukas', label: 'Meškiukas' },
-  { id: 'varliukas', label: 'Varliukas' },
+  { id: 'vilkas', label: 'Vilkas' },
+  { id: 'lape', label: 'Lapė' },
+  { id: 'lusis', label: 'Lūšis' },
+  { id: 'meska', label: 'Meška' },
 ];
 const runnerImg = (id) => `${import.meta.env.BASE_URL}assets/runner/${id}.webp`;
 const LAST_KEY = 'kd.runner.last';
