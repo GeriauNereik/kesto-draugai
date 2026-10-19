@@ -34,7 +34,7 @@ export function menuScreen(root, { onPick, onParents, onSwitch, firstTime = fals
   const jarNum = h('b', { text: seen });
   const jar = h('span', { class: 'jar', html: ICONS.star }, jarNum);
   const chip = onTap(
-    h('button', { type: 'button', class: 'profile-chip', 'aria-label': `${profile.name}, ${total} žvaigždučių. Keisti žaidėją` }, [
+    h('button', { type: 'button', class: 'profile-chip', 'aria-label': `${profile.name}, ${total} ${total % 10 === 0 || (total % 100 >= 10 && total % 100 <= 20) ? 'žvaigždučių' : total % 10 === 1 ? 'žvaigždutė' : 'žvaigždutės'}. Keisti žaidėją` }, [
       h('img', { src: charPortrait(profile.avatar), alt: '', draggable: 'false' }),
       h('span', { class: 'chip-name', text: profile.name }),
       jar,
@@ -66,7 +66,9 @@ export function menuScreen(root, { onPick, onParents, onSwitch, firstTime = fals
         pulse(e.currentTarget, 'squish');
         if (rigs[gi]) rigs[gi].play('happy');
         else pulse(e.currentTarget.querySelector('.card-icon'), 'bounce');
-        setTimeout(() => onPick(g), 550);
+        const card = e.currentTarget;
+        // Jei per tą laiką vaikas jau išėjo kitur (pvz. paspaudė žaidėjo ženklelį) – nebeperšokam.
+        setTimeout(() => card.isConnected && onPick(g), 550);
       }
     )
   );

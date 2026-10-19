@@ -61,6 +61,11 @@ export function timerBar() {
       draw();
       arm();
       raf = requestAnimationFrame(frame);
+      // Paleista, kai programėlė jau fone (pvz. telefonas ką tik užrakintas) – iškart pristabdom.
+      if (document.hidden) {
+        api.pause();
+        autoPaused = true;
+      }
     },
     pause() {
       if (!running) return;

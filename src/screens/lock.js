@@ -10,6 +10,7 @@ let overlay = null;
 
 function render(lock) {
   let typed = '';
+  let checking = false;
   const dots = h('div', { class: 'lock-dots', 'aria-live': 'polite' });
   const card = h('div', { class: 'lock-card' });
   const paint = () => {
@@ -36,10 +37,13 @@ function render(lock) {
   };
   const digit = (d) =>
     key(String(d), () => {
-      if (typed.length >= 8) return;
+      if (checking || typed.length >= String(lock.code).length) return; // tikrinant – papildomų skaitmenų nepriimam
       typed += d;
       paint();
-      if (typed.length === String(lock.code).length) setTimeout(submit, 150);
+      if (typed.length === String(lock.code).length) {
+        checking = true;
+        setTimeout(() => ((checking = false), submit()), 150);
+      }
     });
   const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit);
   keys.push(h('span'), digit(0), key('Ištrinti', () => ((typed = typed.slice(0, -1)), paint()), 'lock-del'));
@@ -67,7 +71,12 @@ function sync(lock) {
 }
 
 /** Paleidžiama vieną kartą: stebi užrakto būseną ir rodo / paslepia ekraną. */
-export function watchLock() {
-  onLockChange(sync);
-  sync(activeLock());
+export function watchLock({ onLock } = {}) {
+  const run = (lock) => {
+    const was = !!overlay;
+    sync(lock);
+    if (lock && !was) onLock?.();
+  };
+  onLockChange(run);
+  run(activeLock());
 }

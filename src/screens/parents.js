@@ -3,20 +3,29 @@ import { h, onTap, randInt, pulse } from '../ui/dom.js';
 import { button, iconButton } from '../ui/button.js';
 import { stars } from '../ui/stars.js';
 import { allGames } from '../config/games.js';
-import { getStars, getSetting, setSetting, resetProgress, getProfiles, updateProfile, deleteProfile } from '../storage.js';
+import { getStars, getSetting, setSetting, resetProgress, getProfiles, updateProfile, deleteProfile, currentProfile } from '../storage.js';
 import { charPortrait } from '../config/characters.js';
 import { ICONS } from '../ui/icons.js';
 import { vocative, tidyName } from '../names.js';
 import { setMuted, voiceStatus } from '../audio.js';
 
-export function parentsScreen(root, { onHome }) {
+/** 1 failas, 2 failai, 10 failų… */
+function plural(n, one, few, many) {
+  const t = n % 100;
+  if (n % 10 === 0 || (t >= 10 && t <= 20)) return many;
+  return n % 10 === 1 ? one : few;
+}
+
+export function parentsScreen(root, { onHome, onCurrentDeleted }) {
+  let deletedCurrent = false;
+  const goHome = () => (deletedCurrent && onCurrentDeleted ? onCurrentDeleted() : onHome());
   const screen = h('section', { class: 'screen parents' });
   root.append(screen);
   showGate();
 
   function topbar(title) {
     return h('header', { class: 'topbar' }, [
-      iconButton({ icon: 'home', ariaLabel: 'Atgal į meniu', onClick: onHome }),
+      iconButton({ icon: 'home', ariaLabel: 'Atgal į meniu', onClick: goHome }),
       h('h1', { class: 'parents-title', text: title }),
     ]);
   }
@@ -87,7 +96,7 @@ export function parentsScreen(root, { onHome }) {
   function soundCard() {
     const v = voiceStatus();
     const status = v.recordings
-      ? `Naudojami įrašai (${v.recordings} failai).`
+      ? `Naudojami įrašai (${v.recordings} ${plural(v.recordings, 'failas', 'failai', 'failų')}).`
       : v.ttsVoice
         ? `Įrašų nėra, kalba iPhone balsas „${v.ttsVoice}“.`
         : 'Įrašų nėra ir lietuviško balso nerasta – rodomas tik tekstas.';
@@ -179,7 +188,7 @@ export function parentsScreen(root, { onHome }) {
       actions.replaceChildren(
         h('div', { class: 'p-confirm' }, [
           button({ label: 'Ištrinti progresą', variant: 'secondary', onClick: () => confirm('Visos šio vaiko žvaigždutės bus ištrintos.', doReset) }),
-          button({ label: 'Ištrinti žaidėją', variant: 'secondary', onClick: () => confirm(`${p.name} bus ištrintas visam laikui.`, doDelete) }),
+          button({ label: 'Ištrinti žaidėją', variant: 'secondary', onClick: () => confirm(`${p.name} bus ${p.gender === 'f' ? 'ištrinta' : 'ištrintas'} visam laikui.`, doDelete) }),
         ])
       );
     const confirm = (msg, action) =>
@@ -197,6 +206,7 @@ export function parentsScreen(root, { onHome }) {
       setTimeout(showButtons, 1800);
     };
     const doDelete = () => {
+      if (currentProfile()?.id === p.id) deletedCurrent = true;
       deleteProfile(p.id);
       card.remove();
     };
@@ -219,7 +229,7 @@ export function parentsScreen(root, { onHome }) {
       h('h2', { text: 'Ką reiškia žvaigždutės' }),
       h('p', {
         class: 'p-note',
-        text: 'Po kiekvieno žaidimo (10 užduočių) vaikas gauna 1–3 žvaigždutes: 3 – jei suklydo ne daugiau kaip 2 kartus, 2 – jei iki 5 kartų, 1 – už pastangas (pralaimėti negalima). Porose skaičiuojami papildomi bandymai.',
+        text: 'Po kiekvieno žaidimo vaikas gauna 1–3 žvaigždutes: 3 – jei suklydo ne daugiau kaip 2 kartus, 2 – jei iki 5 kartų, 1 – už pastangas. Žaidimuose su širdelėmis ar laiku (Matematika, Debesėliai, Antrokams, Surask poras, Kryžiukai-nuliukai) lygis gali ir nepavykti – tada jį galima kartoti. Porose skaičiuojami papildomi bandymai.',
       }),
       h('p', {
         class: 'p-note',

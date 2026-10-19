@@ -32,6 +32,10 @@ const N = {
   simtas: ['šimtas', 'šimtai', 'šimtų'],
   desimtis: ['dešimtis', 'dešimtys', 'dešimčių'],
   vienetas: ['vienetas', 'vienetai', 'vienetų'],
+  // Galininkas (ką?): „rado 25 riešutus“, „padalijo 8 kankorėžius“
+  riesutaKa: ['riešutą', 'riešutus', 'riešutų'],
+  kankorezioKa: ['kankorėžį', 'kankorėžius', 'kankorėžių'],
+  kartas: ['kartą', 'kartus', 'kartų'],
 };
 const nn = (n, w) => `${n} ${noun(n, N[w])}`;
 const NAMES = ['Domas', 'Kęstas', 'Vėja', 'Tadas', 'Ona'];
@@ -46,9 +50,11 @@ function add100() {
     if (a + b > 100 || b < 2) continue;
     if ((a % 10) + (b % 10) < 10 && Math.random() < 0.7) continue;
     const hint =
-      b < 10
-        ? `Papildyk iki apvalios dešimties: ${a} + ${10 - (a % 10)} = ${tens(a) + 10}. Tada pridėk likusius ${b - (10 - (a % 10))}.`
-        : `Sudėk dešimtis: ${tens(a)} + ${tens(b)} = ${tens(a) + tens(b)}. Tada vienetus: ${a % 10} + ${b % 10}.`;
+      b >= 10
+        ? `Sudėk dešimtis: ${tens(a)} + ${tens(b)} = ${tens(a) + tens(b)}. Tada vienetus: ${a % 10} + ${b % 10}.`
+        : (a % 10) + b >= 10 // pereinama per dešimtį
+          ? `Papildyk iki apvalios dešimties: ${a} + ${10 - (a % 10)} = ${tens(a) + 10}. Tada pridėk likusius ${b - (10 - (a % 10))}.`
+          : `Sudėk vienetus: ${a % 10} + ${b} = ${(a % 10) + b}. Dešimtys lieka tos pačios – ${tens(a)}.`;
     return { text: `${a} + ${b} = ?`, answer: a + b, hint };
   }
 }
@@ -60,9 +66,13 @@ function sub100() {
     if (b >= a || b < 2) continue;
     if (a % 10 >= b % 10 && Math.random() < 0.7) continue; // dažniau su „skolinimu“
     const hint =
-      b < 10
-        ? `Pirma atimk iki apvalios dešimties: ${a} − ${a % 10} = ${tens(a)}. Tada atimk likusius ${b - (a % 10)}.`
-        : `Atimk dešimtis: ${a} − ${tens(b)} = ${a - tens(b)}. Tada atimk vienetus: ${a - tens(b)} − ${b % 10}.`;
+      b >= 10
+        ? `Atimk dešimtis: ${a} − ${tens(b)} = ${a - tens(b)}. Tada atimk vienetus: ${a - tens(b)} − ${b % 10}.`
+        : b > a % 10 && a % 10 > 0 // pereinama per dešimtį
+          ? `Pirma atimk iki apvalios dešimties: ${a} − ${a % 10} = ${tens(a)}. Tada atimk likusius ${b - (a % 10)}.`
+          : b > a % 10 // a – apvali dešimtis
+            ? `${a} = ${a - 10} + 10. Iš 10 atimk ${b}: 10 − ${b} = ${10 - b}. Tada ${a - 10} + ${10 - b}.`
+            : `Atimk vienetus: ${a % 10} − ${b} = ${(a % 10) - b}. Dešimtys lieka tos pačios – ${tens(a)}.`;
     return { text: `${a} − ${b} = ?`, answer: a - b, hint };
   }
 }
@@ -70,7 +80,7 @@ function sub100() {
 function mul() {
   const a = Math.random() < 0.75 ? randInt(2, 5) : randInt(6, 10);
   const b = randInt(1, 10);
-  const hint = b <= 5 ? `${a} × ${b} – tai ${b} kartus po ${a}: ${Array(b).fill(a).join(' + ')}.` : `${a} × ${b} = ${b} × ${a}. Gali skaičiuoti po ${a}: ${a}, ${a * 2}, ${a * 3}…`;
+  const hint = b <= 5 ? `${a} × ${b} – tai ${b} ${noun(b, N.kartas)} po ${a}: ${Array(b).fill(a).join(' + ')}.` : `${a} × ${b} = ${b} × ${a}. Gali skaičiuoti po ${a}: ${a}, ${a * 2}, ${a * 3}…`;
   return { text: `${a} × ${b} = ?`, answer: a * b, hint };
 }
 
@@ -119,7 +129,7 @@ function place() {
   if (kind === 1) return { text: `${s * 100} + ${d * 10} + ${v} = ?`, answer: n, hint: `${s * 100} – tai ${nn(s, 'simtas')}, ${d * 10} – ${nn(d, 'desimtis')}.`, digits: [s, d, v] };
   const which = randInt(0, 2);
   const label = ['šimtų', 'dešimčių', 'vienetų'][which];
-  return { text: `Koks skaitmuo yra ${label} vietoje skaičiuje ${n}?`, answer: [s, d, v][which], hint: `Skaičiuje ${n}: šimtai – ${s}, toliau eina dešimtys, paskutinis – vienetai.`, small: true };
+  return { text: `Koks skaitmuo yra ${label} vietoje skaičiuje ${n}?`, answer: [s, d, v][which], hint: `Skaičiuje ${n}: šimtai – ${s}, toliau eina dešimtys, paskutinis – vienetai.`, small: true, digit: true };
 }
 
 function money() {
@@ -145,7 +155,7 @@ function words() {
   const kind = randInt(0, 4);
   if (kind === 0) {
     const a = randInt(5, 40), b = randInt(3, 30);
-    return { text: `${name} rado ${nn(a, 'riesutas')}. Paskui rado dar ${b}. Kiek riešutų iš viso?`, answer: a + b, hint: 'Rado dar – vadinasi, riešutų padaugėjo. Sudėk.', small: true };
+    return { text: `${name} rado ${nn(a, 'riesutaKa')}. Paskui rado dar ${b}. Kiek riešutų iš viso?`, answer: a + b, hint: 'Rado dar – vadinasi, riešutų padaugėjo. Sudėk.', small: true };
   }
   if (kind === 1) {
     const a = randInt(12, 40), b = randInt(3, a - 2);
@@ -153,11 +163,11 @@ function words() {
   }
   if (kind === 2) {
     const a = randInt(2, 5), b = randInt(2, 5);
-    return { text: `Viename krepšelyje yra ${nn(a, 'grybas')}. Kiek grybų yra ${b} tokiuose krepšeliuose?`, answer: a * b, hint: `${b} kartus po ${a} – daugink: ${b} × ${a}.`, small: true };
+    return { text: `Viename krepšelyje yra ${nn(a, 'grybas')}. Kiek grybų yra ${b} tokiuose krepšeliuose?`, answer: a * b, hint: `${b} ${noun(b, N.kartas)} po ${a} – daugink: ${b} × ${a}.`, small: true };
   }
   if (kind === 3) {
     const k = randInt(2, 5), q = randInt(2, 6);
-    return { text: `${nn(k * q, 'kankorezis')} padalijo po lygiai ${k} voverėms. Kiek kankorėžių gavo kiekviena voverė?`, answer: q, hint: `Po lygiai – dalink: ${k * q} : ${k}.`, small: true };
+    return { text: `${name} ${nn(k * q, 'kankorezioKa')} padalijo po lygiai ${k} voverėms. Kiek kankorėžių gavo kiekviena voverė?`, answer: q, hint: `Po lygiai – dalink: ${k * q} : ${k}.`, small: true };
   }
   const g = randInt(5, 15), b = randInt(5, 15);
   return { text: `Klasėje yra ${nn(g, 'mergaite')} ir ${nn(b, 'berniukas')}. Kiek vaikų yra klasėje?`, answer: g + b, hint: 'Visi vaikai – tai mergaitės ir berniukai kartu. Sudėk.', small: true };
@@ -168,6 +178,8 @@ export const GENERATORS = { add100, sub100, mul, div, unknown, compare, place, m
 /** 4 skirtingi atsakymų variantai su tipinėmis klaidomis (±1, ±10, sukeisti skaitmenys). */
 export function grade2Options(task) {
   if (task.signs) return ['>', '<', '='];
+  // Skaitmuo: kiti variantai – irgi skaitmenys 0–9 (kitaip 0 visada būtų atsakymas, o 12 – ne skaitmuo).
+  if (task.digit) return shuffle([task.answer, ...shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter((x) => x !== task.answer)).slice(0, 3)]);
   const a = task.answer;
   const cand = [a + 1, a - 1, a + 10, a - 10, a + 2, a - 2];
   if (a >= 10 && a < 100) cand.push(Number(String(a).split('').reverse().join('')));

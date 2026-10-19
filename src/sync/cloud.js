@@ -32,19 +32,40 @@ function write(key, v) {
   }
 }
 
+/** Klaida su HTTP būsena ir Firebase klaidos kodu (pvz. INVALID_REFRESH_TOKEN). */
+function httpError(status, code) {
+  const e = new Error(`HTTP ${status}${code ? ` ${code}` : ''}`);
+  e.status = status;
+  e.code = code || '';
+  return e;
+}
+
 async function post(url, body, form = false) {
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': form ? 'application/x-www-form-urlencoded' : 'application/json' },
     body: form ? new URLSearchParams(body) : JSON.stringify(body),
   });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  if (!r.ok) {
+    const j = await r.json().catch(() => null);
+    throw httpError(r.status, j?.error?.message || '');
+  }
   return r.json();
 }
 
-/** Galiojantis žetonas (prireikus – naujas anoniminis prisijungimas arba atnaujinimas). */
-async function token() {
-  if (auth && auth.exp > Date.now() + 60_000) return auth.idToken;
+// Tik šios klaidos reiškia, kad senas prisijungimas tikrai nebegalioja (tada – naujas).
+// Kitos (nėra ryšio, 5xx, viešojo Wi-Fi puslapis) – tik bandom vėliau, kad telefonas neprarastų tapatybės ir užrakto.
+const DEAD_TOKEN = /INVALID_REFRESH_TOKEN|TOKEN_EXPIRED|USER_NOT_FOUND|USER_DISABLED|INVALID_GRANT/;
+
+let pendingToken = null;
+/** Galiojantis žetonas. Vienu metu – tik viena užklausa (kitaip galėtų atsirasti keli „telefonai“). */
+function token(force = false) {
+  if (!force && auth && auth.exp > Date.now() + 60_000) return Promise.resolve(auth.idToken);
+  if (!pendingToken) pendingToken = fetchToken().finally(() => (pendingToken = null));
+  return pendingToken;
+}
+
+async function fetchToken() {
   const key = FIREBASE.apiKey;
   if (auth?.refreshToken) {
     try {
@@ -52,8 +73,8 @@ async function token() {
       auth = { uid: r.user_id, idToken: r.id_token, refreshToken: r.refresh_token, exp: Date.now() + Number(r.expires_in) * 1000 };
       write(AUTH_KEY, auth);
       return auth.idToken;
-    } catch {
-      /* sugadintas – registruojamės iš naujo */
+    } catch (e) {
+      if (!DEAD_TOKEN.test(e.code)) throw e;
     }
   }
   const r = await post(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${key}`, { returnSecureToken: true });
@@ -62,15 +83,21 @@ async function token() {
   return auth.idToken;
 }
 
-async function api(path, { method = 'GET', body } = {}) {
+/** Užklausa su žetonu; gavus 401 (pvz. pasukus laikrodį) – naujas žetonas ir dar vienas bandymas. */
+async function authed(url, init = {}, retry = true) {
   const t = await token();
-  const r = await fetch(`${DOCS}${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const r = await fetch(url, { ...init, headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' } });
+  if (r.status === 401 && retry) {
+    await token(true);
+    return authed(url, init, false);
+  }
+  return r;
+}
+
+async function api(path, { method = 'GET', body } = {}) {
+  const r = await authed(`${DOCS}${path}`, { method, body: body ? JSON.stringify(body) : undefined });
   if (r.status === 404) return null;
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  if (!r.ok) throw httpError(r.status);
   return r.json();
 }
 
@@ -130,12 +157,11 @@ export async function pushDay(day, perProfile) {
     if (ev?.length) transforms.push({ fieldPath: `p.${pid}.ev`, appendMissingElements: { values: ev.map(toValue) } });
   }
   if (!transforms.length) return;
-  const t = await token();
-  const r = await fetch(`https://firestore.googleapis.com/v1/projects/${FIREBASE.projectId}/databases/(default)/documents:commit`, {
+  const r = await authed(`https://firestore.googleapis.com/v1/projects/${FIREBASE.projectId}/databases/(default)/documents:commit`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
+    keepalive: true, // kad išsiųstų ir programėlę uždarant
     // update su tuščia kauke + transformacijos: dokumentas sukuriamas, jei jo dar nėra
     body: JSON.stringify({ writes: [{ update: { name, fields: {} }, updateMask: { fieldPaths: [] }, updateTransforms: transforms }] }),
   });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  if (!r.ok) throw httpError(r.status);
 }

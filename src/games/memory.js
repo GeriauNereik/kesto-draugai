@@ -43,7 +43,9 @@ export function memoryGame(root, { level, onHome, onFinish }) {
   const timer = timerBar();
   timer.el.hidden = true;
   shell.screen.querySelector('.topbar').after(timer.el);
+  let over = false; // laikas baigėsi – daugiau kortelių nebeverčiam
   const timeUp = async () => {
+    over = true;
     round.busy = true;
     sfx('wrong');
     shell.char.setEmotion('encourage');
@@ -53,7 +55,7 @@ export function memoryGame(root, { level, onHome, onFinish }) {
   };
 
   async function flip(card) {
-    if (round.busy || card.classList.contains('flipped')) return;
+    if (over || round.busy || card.classList.contains('flipped')) return;
     card.classList.add('flipped');
     sfx('flip');
     open.push(card);
@@ -79,7 +81,7 @@ export function memoryGame(root, { level, onHome, onFinish }) {
         return onFinish({ stars: memoryStars(attempts - pairs, pairs) });
       }
       await wait(500);
-      round.busy = false;
+      if (!over) round.busy = false;
     } else {
       await wait(1000);
       if (!round.alive) return;
@@ -87,7 +89,7 @@ export function memoryGame(root, { level, onHome, onFinish }) {
       b.classList.remove('flipped');
       sfx('flip');
       shell.char.setEmotion('think');
-      round.busy = false;
+      if (!over) round.busy = false;
     }
   }
 

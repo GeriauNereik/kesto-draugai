@@ -56,6 +56,8 @@ function score(b, turn, depth = 0) {
 }
 
 function bestMove(b) {
+  // Tuščia lenta: pilnas skaičiavimas lėtame telefone užtrunka – geriausias ėjimas vis tiek kampas ar centras.
+  if (b.every((v) => !v)) return shuffle([0, 2, 4, 6, 8])[0];
   const opts = empty(b).map((i) => {
     const t = b.slice();
     t[i] = O;

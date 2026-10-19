@@ -22,7 +22,9 @@ export function hubScreen(root, { hub, onPick, onHome }) {
         picking = true;
         sfx('whoosh');
         pulse(e.currentTarget, 'squish');
-        setTimeout(() => onPick(g), 300);
+        const card = e.currentTarget;
+        // Jei per tą laiką vaikas jau išėjo kitur (pvz. paspaudė žaidėjo ženklelį) – nebeperšokam.
+        setTimeout(() => card.isConnected && onPick(g), 300);
       }
     )
   );

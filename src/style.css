@@ -3688,12 +3688,15 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow-y: auto; /* mažame gulsčiame telefone – slenkama, niekas nenukerpama */
+  -webkit-overflow-scrolling: touch;
   padding: calc(16px + var(--safe-t)) calc(16px + var(--safe-r)) calc(16px + var(--safe-b)) calc(16px + var(--safe-l));
   background: rgba(255, 246, 229, 0.96);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
 .lock-card {
+  margin: auto; /* centre, bet netelpant – nuo viršaus (ne nukerpama) */
   width: 100%;
   max-width: 340px;
   display: flex;

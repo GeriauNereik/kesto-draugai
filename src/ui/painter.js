@@ -39,16 +39,22 @@ export function createPainter(canvas, { onChange } = {}) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = BG;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    if (old) ctx.drawImage(old, 0, 0, canvas.width, canvas.height);
+    // Senas piešinys – savo dydžio, kampe (netempiam; pasukus ar pasikeitus maketui piešinys neiškreipiamas).
+    if (old) ctx.drawImage(old, 0, 0);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    undoStack.length = 0;
+    if (undoStack.length) {
+      undoStack.length = 0; // senos kopijos kito dydžio – nebetinka
+      onChange?.({ strokes, canUndo: false });
+    }
   }
 
   // ---------- atšaukimas ----------
   function snapshot() {
     try {
       undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-      if (undoStack.length > MAX_UNDO) undoStack.shift();
+      // Didelė drobė (iPad) – mažiau kopijų, kad Safari neperkrautų puslapio dėl atminties.
+      const max = canvas.width * canvas.height > 3_000_000 ? 4 : MAX_UNDO;
+      while (undoStack.length > max) undoStack.shift();
     } catch {
       /* per mažai atminties – be atšaukimo */
     }

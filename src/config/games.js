@@ -110,7 +110,7 @@ export const PLAY_GAMES = [
     char: 'veja',
     title: 'Surask poras',
     icon: 'cards',
-    levels: MEMORY_PAIRS.map((n, i) => ({ label: `${i + 1}`, tiles: [`${n} poros`, `${memorySeconds(n)} s`] })),
+    levels: MEMORY_PAIRS.map((n, i) => ({ label: `${i + 1}`, tiles: [`${n} ${n % 10 === 0 || (n % 100 > 10 && n % 100 < 20) ? 'porų' : n % 10 === 1 ? 'pora' : 'poros'}`, `${memorySeconds(n)} s`] })),
   },
   {
     id: 'draw',

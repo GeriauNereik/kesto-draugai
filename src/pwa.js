@@ -4,10 +4,27 @@ import { registerSW } from 'virtual:pwa-register';
 
 const EVERY = 30 * 60 * 1000;
 
-export function setupPwa() {
+let pending = false; // nauja versija aktyvi, bet persikrauti dar nebuvo galima (vaikas žaidžia)
+let canReloadNow = () => true;
+
+/** Iškviečiama keičiant ekraną: jei laukia atnaujinimas – persikraunam dabar (true). */
+export function applyPendingUpdate() {
+  if (!pending) return false;
+  pending = false;
+  window.location.reload();
+  return true;
+}
+
+export function setupPwa({ canReload } = {}) {
   if (!('serviceWorker' in navigator)) return;
+  if (canReload) canReloadNow = canReload;
   const updateSW = registerSW({
     immediate: true,
+    // Nauja versija aktyvuota: jei dabar žaidžiama – palaukiam, kol vaikas išeis iš žaidimo.
+    onNeedReload() {
+      if (canReloadNow()) window.location.reload();
+      else pending = true;
+    },
     // Jei nauja versija vis tiek laukia – aktyvuojam ją ir persikraunam.
     onNeedRefresh() {
       updateSW(true);

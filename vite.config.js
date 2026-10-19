@@ -216,7 +216,8 @@ export default defineConfig({
         runtimeCaching: [
           {
             urlPattern: /\/assets\/audio\/draw\/.*\.mp3$/,
-            handler: 'CacheFirst',
+            // Iš karto iš atminties, bet fone pasitikrina – perįrašyta frazė atsinaujins.
+            handler: 'StaleWhileRevalidate',
             options: { cacheName: 'draw-audio', expiration: { maxEntries: 700 } },
           },
         ],

@@ -9,8 +9,9 @@ import '@fontsource/titan-one/latin-ext-400.css';
 import './style.css';
 
 import { unlockAudio, preload, stop, setMuted } from './audio.js';
-import { setupPwa } from './pwa.js';
-import { startActivity, track, profileChanged } from './sync/activity.js';
+import { setupPwa, applyPendingUpdate } from './pwa.js';
+import { aspectPolyfill } from './ui/aspect-polyfill.js';
+import { startActivity, track, profileChanged, setPlaying } from './sync/activity.js';
 import { watchLock } from './screens/lock.js';
 import { allPortraits } from './config/characters.js';
 import { allRigImgs } from './character/rig-config.js';
@@ -60,8 +61,14 @@ let cleanup = null;
 let breakDue = false;
 
 /** Perjungia ekraną: išvalo ankstesnį ir piešia naują. */
+let showing = null; // dabartinio ekrano funkcija
 function show(render, params = {}) {
   stop();
+  showing = render;
+  const isGame = Object.values(GAME_MODULES).includes(render);
+  setPlaying(isGame); // žaidimo laikas admin panelei skaičiuojamas tik žaidžiant
+  // Nauja versija atsisiuntė žaidimo metu – persikraunam tik išėjus iš žaidimo.
+  if (!isGame && applyPendingUpdate()) return;
   if (typeof cleanup === 'function') cleanup();
   cleanup = null;
   killWithin(app);
@@ -129,7 +136,15 @@ const screens = {
     });
   },
   parents() {
-    show(parentsScreen, { onHome: screens.menu });
+    show(parentsScreen, {
+      onHome: screens.menu,
+      // Ištrintas dabartinis žaidėjas – iš naujo „Kas žais?“ (ir patikrinam naujo žaidėjo užraktą).
+      onCurrentDeleted: () => {
+        resetGreeting();
+        profileChanged();
+        screens.home();
+      },
+    });
   },
   hub(hub) {
     show(hubScreen, { hub, onHome: screens.menu, onPick: (game) => (game.direct ? screens.game(game, 1) : screens.level(game)) });
@@ -194,12 +209,14 @@ else setTimeout(warm, 300);
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('gesturestart', (e) => e.preventDefault());
 
+aspectPolyfill(); // iOS 14: CSS aspect-ratio pakaitalas
 setMuted(!getSetting('sound'));
 document.body.prepend(decor());
 screens.start();
 
 // Atnaujinimai (įdiegtoje programėlėje): žr. src/pwa.js
-setupPwa();
+setupPwa({ canReload: () => !Object.values(GAME_MODULES).includes(showing) });
 // Statistika admin panelei ir užraktas su kodu: žr. src/sync/
 startActivity();
-watchLock();
+// Uždėjus užraktą žaidimo metu – žaidimas sustabdomas (grįžtam į meniu, virš jo – užrakto ekranas).
+watchLock({ onLock: () => Object.values(GAME_MODULES).includes(showing) && screens.menu() });

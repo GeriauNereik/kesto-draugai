@@ -7,6 +7,7 @@ import { guessGender, vocative, tidyName } from '../names.js';
 import { createProfile } from '../storage.js';
 import { sfx } from '../sfx.js';
 import { burst, stagger } from '../ui/fx.js';
+import { destroyWithin } from '../character/character.js';
 
 // Avatarai – visi draugai, išskyrus vedlę Oną.
 export const AVATARS = FRIENDS;
@@ -20,8 +21,8 @@ export function onboardingScreen(root, { onDone, onBack }) {
 
   showName();
 
-  function header() {
-    return h('header', { class: 'topbar' }, onBack ? [iconButton({ icon: 'back', ariaLabel: 'Atgal', onClick: onBack })] : []);
+  function header(back = onBack) {
+    return h('header', { class: 'topbar' }, back ? [iconButton({ icon: 'back', ariaLabel: 'Atgal', onClick: back })] : []);
   }
 
   // ---------- 1. Vardas ir lytis ----------
@@ -76,6 +77,7 @@ export function onboardingScreen(root, { onDone, onBack }) {
     input.addEventListener('input', sync);
     input.addEventListener('keydown', (e) => e.key === 'Enter' && submit());
 
+    destroyWithin(screen);
     screen.replaceChildren(
       header(),
       h('div', { class: 'onb-body' }, [
@@ -101,6 +103,7 @@ export function onboardingScreen(root, { onDone, onBack }) {
         onTap(card, async () => {
           if (picked) return;
           picked = true;
+          screen.querySelector('.topbar')?.replaceChildren(); // profilis jau kuriamas – atgal nebegalima
           grid.querySelectorAll('.avatar-card').forEach((c) => c.classList.toggle('faded', c !== card));
           card.classList.add('picked');
           sfx('correct');
@@ -114,8 +117,9 @@ export function onboardingScreen(root, { onDone, onBack }) {
         return card;
       })
     );
+    destroyWithin(screen); // ankstesnio žingsnio Onos animacija (kitaip liktų veikti fone)
     screen.replaceChildren(
-      header(),
+      header(showName), // atgal – į vardo įvedimą (įvestas vardas išlieka)
       h('div', { class: 'onb-body avatar-step' }, [h('div', { class: 'onb-char' }, host.el), stagger(grid, 80, 100, 'rise')])
     );
     host.speak('phrases/draugas');

@@ -1,6 +1,6 @@
 rules_version = '2';
 // Kęsto draugai: kiekvienas įrenginys (anoniminė paskyra) rašo tik savo duomenis;
-// admin mato viską ir vienintelis gali uždėti / nuimti užraktus (laukas `locks`).
+// admin mato viską ir vienintelis gali uždėti / nuimti užraktus (laukas `locks`) ir pervadinti (`label`).
 service cloud.firestore {
   match /databases/{database}/documents {
     function isAdmin() {
@@ -9,18 +9,35 @@ service cloud.firestore {
     function isDevice(uid) {
       return request.auth != null && request.auth.uid == uid;
     }
+    // Ką įrenginys gali rašyti į savo dokumentą (ir kokio dydžio) – kad niekas negalėtų prikrauti šiukšlių.
+    function validDeviceData(d) {
+      return d.keys().hasOnly(['profiles', 'lastSeen', 'firstSeen', 'device', 'unlocked', 'locks', 'label'])
+        && (!('profiles' in d) || (d.profiles is map && d.profiles.size() <= 20))
+        && (!('unlocked' in d) || (d.unlocked is map && d.unlocked.size() <= 21))
+        && (!('lastSeen' in d) || d.lastSeen is int)
+        && (!('firstSeen' in d) || d.firstSeen is int)
+        && (!('device' in d) || (d.device is string && d.device.size() <= 40));
+    }
 
     match /devices/{uid} {
       allow read: if isAdmin() || isDevice(uid);
       // locks (kodas) ir label (pavadinimas) – keičia tik admin
-      allow create: if isDevice(uid) && !request.resource.data.keys().hasAny(['locks', 'label']);
+      allow create: if isDevice(uid)
+        && !request.resource.data.keys().hasAny(['locks', 'label'])
+        && validDeviceData(request.resource.data);
       allow update: if isAdmin()
-        || (isDevice(uid) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['locks', 'label']));
+        || (isDevice(uid)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['locks', 'label'])
+          && validDeviceData(request.resource.data));
       allow delete: if isAdmin();
 
+      // Dienų statistika: tik YYYY-MM-DD; įrenginys rašo, bet ištrinti gali tik admin.
       match /days/{day} {
         allow read: if isAdmin() || isDevice(uid);
-        allow write: if isDevice(uid);
+        allow create, update: if isDevice(uid)
+          && day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && request.resource.data.keys().hasOnly(['p'])
+          && request.resource.data.p.size() <= 20;
         allow delete: if isAdmin();
       }
     }

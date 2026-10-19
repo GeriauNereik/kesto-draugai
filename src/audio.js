@@ -66,7 +66,7 @@ export function unlockAudio() {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (AC && !ctx) ctx = new AC();
     if (ctx) {
-      ctx.resume?.();
+      ctx.resume?.()?.catch?.(() => {});
       const buf = ctx.createBuffer(1, 1, 22050);
       const src = ctx.createBufferSource();
       src.buffer = buf;
@@ -117,7 +117,10 @@ function loadBuffer(key) {
           })
       )
       .then((buf) => ({ buf, ...trimSilence(buf) }))
-      .catch(() => null);
+      .catch(() => {
+        buffers.delete(key); // nepavyko (pvz. be interneto) – kitą kartą bandysim vėl
+        return null;
+      });
     buffers.set(key, p);
   }
   return buffers.get(key);

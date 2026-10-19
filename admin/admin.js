@@ -3,7 +3,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import {
-  getFirestore, collection, doc, onSnapshot, query, orderBy, limit, documentId, updateDoc, deleteField, deleteDoc, writeBatch, FieldPath,
+  getFirestore, collection, doc, onSnapshot, query, orderBy, limit, documentId, updateDoc, deleteField, deleteDoc, getDocs, FieldPath,
 } from 'firebase/firestore';
 import { FIREBASE, ADMIN_EMAIL } from '../src/sync/config.js';
 
@@ -127,7 +127,8 @@ else onAuthStateChanged(auth, (user) => {
 function watch() {
   unsubs.push(
     onSnapshot(
-      query(collection(db, 'devices'), orderBy('lastSeen', 'desc')),
+      // Be orderBy: kitaip įrenginiai be lastSeen būtų nematomi (rikiuojam piešiant).
+      collection(db, 'devices'),
       (snap) => {
         const seen = new Set();
         snap.forEach((d) => {
@@ -199,16 +200,27 @@ $('#bulk').addEventListener('submit', async (ev) => {
   if (code.length < 3) return note(CODE_HINT, true);
   if (!devices.size) return note('Telefonų dar nėra.');
   const lock = { code, msg: String(f.get('msg') || '').trim(), at: Date.now() };
-  const b = writeBatch(db);
-  for (const id of devices.keys()) b.update(doc(db, 'devices', id), ALL, lock);
-  await act(() => b.commit(), `Užrakinta telefonų: ${devices.size}. Kodas ${code}.`);
+  // Kiekvienas atskirai – jei vienas telefonas ką tik pašalintas, kiti vis tiek užrakinami.
+  await act(() => eachDevice((id) => updateDoc(doc(db, 'devices', id), ALL, lock)), `Užrakinta telefonų: ${devices.size}. Kodas ${code}.`);
 });
 $('#bulk-clear').addEventListener('click', async () => {
   if (!devices.size) return;
-  const b = writeBatch(db);
-  for (const id of devices.keys()) b.update(doc(db, 'devices', id), { locks: deleteField() });
-  await act(() => b.commit(), 'Užraktai nuimti visiems telefonams.');
+  await act(() => eachDevice((id) => updateDoc(doc(db, 'devices', id), { locks: deleteField() })), 'Užraktai nuimti visiems telefonams.');
 });
+
+/** Veiksmas visiems telefonams; klaida – tik jei nepavyko nė vienam. */
+async function eachDevice(fn) {
+  const res = await Promise.allSettled([...devices.keys()].map(fn));
+  const bad = res.filter((r) => r.status === 'rejected');
+  if (bad.length === res.length && bad.length) throw bad[0].reason;
+}
+
+/** Pašalina telefoną kartu su jo dienų statistika (kitaip senos dienos „prisikeltų“). */
+async function removeDevice(uid) {
+  const days = await getDocs(collection(db, 'devices', uid, 'days'));
+  await Promise.all(days.docs.map((d) => deleteDoc(d.ref)));
+  await deleteDoc(doc(db, 'devices', uid));
+}
 
 // ---------- Vienas telefonas ----------
 const setLock = (uid, code, msg) => updateDoc(doc(db, 'devices', uid), ALL, { code, msg, at: Date.now() });
@@ -303,7 +315,7 @@ function details(uid, entry, days, profiles, daySec) {
       : el('p', { class: 'muted' }, 'Per 7 dienas veiklos nėra.'),
     el('button', {
       class: 'ghost danger',
-      onclick: () => window.confirm('Pašalinti šį telefoną iš sąrašo? Jei programėlė vėl bus atidaryta, jis atsiras iš naujo.') && act(() => deleteDoc(doc(db, 'devices', uid)), 'Telefonas pašalintas iš sąrašo.'),
+      onclick: () => window.confirm('Pašalinti šį telefoną iš sąrašo? Jei programėlė vėl bus atidaryta, jis atsiras iš naujo.') && act(() => removeDevice(uid), 'Telefonas pašalintas iš sąrašo.'),
     }, 'Pašalinti iš sąrašo')
   );
 }
@@ -314,7 +326,9 @@ let pending = false;
 // nauju dar prieš „click“, ir paspaudimas dingtų.
 let holdUntil = 0;
 document.addEventListener('pointerdown', (e) => $('#devices').contains(e.target) && (holdUntil = Infinity), true);
-document.addEventListener('pointerup', () => holdUntil !== 0 && ((holdUntil = Date.now() + 400), setTimeout(render, 450)), true);
+const release = () => holdUntil !== 0 && ((holdUntil = Date.now() + 400), setTimeout(render, 450));
+document.addEventListener('pointerup', release, true);
+document.addEventListener('pointercancel', release, true); // slenkant liečiamu ekranu ateina cancel, ne up
 function render() {
   if (Date.now() < holdUntil) return;
   // Nepiešiam iš naujo, kol admin rašo – kitaip dingtų žymeklis.
@@ -326,7 +340,7 @@ function render() {
     }
     return;
   }
-  const list = [...devices.entries()].filter(([, e]) => e.data);
+  const list = [...devices.entries()].filter(([, e]) => e.data).sort(([, a], [, b]) => (b.data.lastSeen || 0) - (a.data.lastSeen || 0));
   const online = list.filter(([, e]) => Date.now() - (e.data.lastSeen || 0) < ONLINE).length;
   const locked = list.filter(([, e]) => lockInfo(e.data).on).length;
   $('#summary').textContent = `${list.length} telefonai · ${online} atidaryti · ${locked} užrakinti`;
