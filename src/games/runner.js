@@ -1,5 +1,6 @@
 // „Miško bėgimas“ (kaip Chrome dinozauras): veikėjas bėga, vaikas bakstelėja – šoka per kliūtis.
 // Pakeliui renkami žetonai (+10 taškų), kartais pasitaiko magnetas – 10 s pritraukia žetonus.
+// Ore bakstelėjus dar kartą – dvigubas (aukštesnis) šuolis; dalis žetonų – aukštai, tik dvigubam šuoliui.
 // Kuo ilgiau bėgi, tuo greičiau ir tankiau kliūtys. Rekordas saugomas žaidėjui ir visada matomas.
 // Pradžioje vaikas pasirenka vieną iš 4 šio žaidimo veikėjų; kiekvienas turi savo rekordą.
 import { h, onTap } from '../ui/dom.js';
@@ -22,6 +23,9 @@ const runFrame = (id, i) => `${import.meta.env.BASE_URL}assets/runner/run/${id}-
 const PICKUP = (n) => `${import.meta.env.BASE_URL}assets/runner/${n}.webp`;
 const COIN_POINTS = 10; // kiek taškų už žetoną
 const MAGNET_SECS = 10; // kiek laiko magnetas traukia žetonus
+const ARC_CHANCE = 0.28; // kaip dažnai virš kliūčių būna žetonų lankas (su magnetu – dažniau)
+const ARC_CHANCE_MAGNET = 0.8;
+const HIGH_CHANCE = 0.35; // dalis lankų – aukštai (pasiekiami tik dvigubu šuoliu)
 const LAST_KEY = 'kd.runner.last';
 const GAME = 'runner';
 const recordKey = (id) => `${GAME}:${id}`;
@@ -121,7 +125,7 @@ export function runnerGame(root, { onHome }) {
   const hiEl = h('span', { class: 'run-hi' });
   const scoreEl = h('span', { class: 'run-score' });
   const coinsEl = h('span', { class: 'run-coins' }, [h('img', { src: PICKUP('coin'), alt: '' }), h('b', { text: '0' })]);
-  const hint = h('div', { class: 'run-hint' }, [h('b', { text: 'Bakstelėk – šok!' }), h('span', { text: 'Šok per kliūtis. Kuo toliau, tuo greičiau.' })]);
+  const hint = h('div', { class: 'run-hint' }, [h('b', { text: 'Bakstelėk – šok!' }), h('span', { text: 'Ore bakstelėk dar kartą – šoksi aukščiau. Rink žetonus!' })]);
   const over = h('div', { class: 'run-over', hidden: true });
   const picker = h('div', { class: 'run-pick' });
   const stage = h('div', { class: 'run-stage' }, [canvas, hint, over, picker]);
@@ -165,6 +169,8 @@ export function runnerGame(root, { onHome }) {
   let y = 0; // aukštis virš žemės (px, aukštyn teigiamas)
   let vy = 0;
   let holding = false;
+  let doubled = false; // ar jau panaudotas antras (dvigubas) šuolis
+  let spin = -1; // dvigubo šuolio apsisukimo laikas (s); -1 – nesisuka
   let obstacles = [];
   let coins = []; // { x, y (aukštis virš žemės), got, t }
   let pops = []; // „+10“ užrašai
@@ -199,6 +205,8 @@ export function runnerGame(root, { onHome }) {
     elapsed = 0;
     y = 0;
     vy = 0;
+    doubled = false;
+    spin = -1;
     obstacles = [];
     coins = [];
     pops = [];
@@ -269,7 +277,18 @@ export function runnerGame(root, { onHome }) {
       if (performance.now() - deadAt > 700) start();
       return;
     }
-    if (y > 0.5) return; // jau ore
+    if (y > 0.5) {
+      // ore – dar vienas (dvigubas) šuolis, aukštesnis, su apsisukimu
+      if (doubled) return;
+      doubled = true;
+      vy = physics().v0 * 0.78;
+      holding = true;
+      spin = 0;
+      sfx('jump');
+      setTimeout(() => sfx('whoosh'), 60);
+      return;
+    }
+    doubled = false;
     vy = physics().v0;
     holding = true;
     sfx('jump');
@@ -292,21 +311,37 @@ export function runnerGame(root, { onHome }) {
       span += (i ? size * 0.05 : 0) + o.w;
       x += o.w + size * 0.05;
     }
-    // Žetonų lankas virš kliūčių – surenkamas šokant
-    if (Math.random() < 0.55) {
-      const n = 3 + Math.floor(Math.random() * 3);
+    // Naujos kliūtys niekada neuždengiamos: žetonai ir magnetas toje vietoje – pašalinami
+    const placed = obstacles.slice(-count);
+    const cs = size * 0.36;
+    const covers = (it) => placed.some((o) => it.x > o.x - cs && it.x < o.x + o.w + cs && it.y - cs / 2 < o.h + size * 0.12);
+    coins = coins.filter((c) => c.got || !covers(c));
+    if (magnet && covers(magnet)) magnet = null;
+    // Žetonų lankas virš kliūčių – visada aukščiau už aukščiausią kliūtį
+    if (Math.random() < (magnetT > 0 ? ARC_CHANCE_MAGNET : ARC_CHANCE)) {
+      const maxH = Math.max(...placed.map((o) => o.h));
+      const n = 3 + Math.floor(Math.random() * (magnetT > 0 ? 4 : 2));
       const mid = W + 20 + span / 2;
       const step = size * 0.42;
+      const high = Math.random() < HIGH_CHANCE;
+      const top = maxY(); // aukščiausia vieta, kurią veikėjas pasiekia dvigubu šuoliu
+      const base = high ? Math.min(size * 2.6, top - size * 0.45) : maxH + size * 0.38;
+      const rise = high ? size * 0.35 : size * 0.75;
       for (let i = 0; i < n; i++) {
         const t = n === 1 ? 0.5 : i / (n - 1);
-        coins.push({ x: mid + (i - (n - 1) / 2) * step, y: size * (0.55 + 1.05 * 4 * t * (1 - t)), got: false, t: 0 });
+        coins.push({ x: mid + (i - (n - 1) / 2) * step, y: Math.min(top, base + rise * 4 * t * (1 - t)), got: false, t: 0 });
       }
     }
   }
 
+  /** Aukščiausias žetono centras (virš žemės), kurį dar galima pasiekti (dvigubu šuoliu, neišlekiant iš ekrano). */
+  function maxY() {
+    return Math.max(size * 1.5, Math.min(size * 3.0, ground - size * 0.62));
+  }
+
   /** Žetonų eilė ant žemės (tarp kliūčių) – tik jei toje vietoje nėra kliūties. */
   function spawnRow() {
-    const n = 4 + Math.floor(Math.random() * 4);
+    const n = magnetT > 0 ? 5 + Math.floor(Math.random() * 4) : 3 + Math.floor(Math.random() * 3);
     const step = size * 0.45;
     const x0 = W + 20;
     const x1 = x0 + n * step;
@@ -369,6 +404,14 @@ export function runnerGame(root, { onHome }) {
     vy -= grav * dt;
     y = Math.max(0, y + vy * dt);
     if (y === 0 && vy < 0) vy = 0;
+    // lubos: veikėjas neišlekia iš ekrano viršaus
+    const ceil = maxY() - size * 0.5;
+    if (y > ceil) {
+      y = ceil;
+      if (vy > 0) vy = 0;
+    }
+    if (y === 0) doubled = false;
+    if (spin >= 0) spin = spin + dt > 0.45 ? -1 : spin + dt;
 
     const dx = speed * dt;
     scroll += dx;
@@ -383,7 +426,8 @@ export function runnerGame(root, { onHome }) {
 
     // ---- žetonai ir magnetas ----
     nextRow -= dx;
-    if (nextRow <= 0) nextRow = spawnRow() ? W * (0.9 + Math.random() * 1.4) : size * 2;
+    // eilės ant žemės – retai; su magnetu – dažnai
+    if (nextRow <= 0) nextRow = spawnRow() ? W * (magnetT > 0 ? 0.5 + Math.random() * 0.6 : 1.8 + Math.random() * 1.6) : size * 2;
     nextMagnet -= dx;
     if (nextMagnet <= 0 && !magnet && magnetT <= 0) {
       if (!obstacles.some((o) => o.x > W - size * 2)) magnet = { x: W + 20, y: size * (0.45 + Math.random() * 0.75) };
@@ -412,6 +456,9 @@ export function runnerGame(root, { onHome }) {
         const k = Math.min(1, (dt * (900 + speed)) / Math.max(1, d));
         c.x += (hx - c.x) * k;
         c.y += (hy - c.y) * k;
+        // skrisdamas žetonas niekada neuždengia kliūties – praskrenda virš jos
+        const cr = size * 0.18;
+        for (const o of obstacles) if (c.x > o.x - cr * 1.5 && c.x < o.x + o.w + cr * 1.5) c.y = Math.max(c.y, o.h + cr + size * 0.08);
       }
       if (Math.hypot(c.x - hx, c.y - hy) < size * 0.5) {
         c.got = true;
@@ -711,6 +758,12 @@ export function runnerGame(root, { onHome }) {
     ctx.save();
     ctx.translate(x + size / 2, ground - y - bob);
     ctx.rotate(tilt);
+    if (spin >= 0) {
+      // dvigubas šuolis – apsisuka aplink savo centrą
+      ctx.translate(0, -size * 0.5);
+      ctx.rotate((spin / 0.45) * Math.PI * 2);
+      ctx.translate(0, size * 0.5);
+    }
     ctx.scale(1, squash);
     if (img === hero) drawTrimmed(ctx, img, 0, 1, size * 0.92); // +1 px – kojos ant žolės, ne virš jos
     else {
