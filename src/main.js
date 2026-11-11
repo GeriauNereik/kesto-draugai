@@ -41,6 +41,12 @@ import { clockGame } from './games/clock.js';
 import { grade2Game } from './games/grade2.js';
 import { tictactoeGame } from './games/tictactoe.js';
 import { drawGame } from './games/draw.js';
+import { sortGame } from './games/brain/sort.js';
+import { trafficGame } from './games/brain/traffic.js';
+import { sudokuGame } from './games/brain/sudoku.js';
+import { tangramGame } from './games/brain/tangram.js';
+import { pathGame } from './games/brain/path.js';
+import { trailGame } from './games/brain/trail.js';
 import { hubScreen } from './screens/hub.js';
 
 const GAME_MODULES = {
@@ -54,6 +60,12 @@ const GAME_MODULES = {
   tictactoe: tictactoeGame,
   draw: drawGame,
   runner: runnerGame,
+  sort: sortGame,
+  traffic: trafficGame,
+  sudoku: sudokuGame,
+  tangram: tangramGame,
+  path: pathGame,
+  trail: trailGame,
 };
 
 const app = document.getElementById('app');

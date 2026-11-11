@@ -13,7 +13,10 @@ export function hubScreen(root, { hub, onPick, onHome }) {
   const cards = hub.hub.map((g) =>
     onTap(
       h('button', { type: 'button', class: 'game-card hub-card', 'aria-label': g.title }, [
-        h('div', { class: 'card-img hub-icon', html: ICONS[g.icon] }),
+        // Iliustracija (jei yra), kitaip – ikona.
+        g.img
+          ? h('div', { class: 'card-img hub-pic' }, h('img', { src: `${import.meta.env.BASE_URL}assets/${g.img}`, alt: '', draggable: 'false', decoding: 'async' }))
+          : h('div', { class: 'card-img hub-icon', html: ICONS[g.icon] }),
         h('span', { class: 'card-title', text: g.title }),
         h('div', { class: 'card-stars' }, levelsSummary(g)),
       ]),
@@ -32,7 +35,7 @@ export function hubScreen(root, { hub, onPick, onHome }) {
   root.append(
     h('section', { class: 'screen menu hub' }, [
       h('header', { class: 'topbar' }, [iconButton({ icon: 'home', ariaLabel: 'Į meniu', onClick: onHome })]),
-      h('div', { class: 'menu-body' }, [h('div', { class: 'menu-host' }, host.el), stagger(h('div', { class: 'menu-cards' }, cards), 80, 100, 'rise')]),
+      h('div', { class: 'menu-body' }, [h('div', { class: 'menu-host' }, host.el), stagger(h('div', { class: `menu-cards${cards.length > 4 ? ' many' : ''}` }, cards), 80, 100, 'rise')]),
     ])
   );
   host.speak(`phrases/${hub.greet}`);

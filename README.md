@@ -6,6 +6,8 @@ pridedama į pradžios ekraną ir veikia be interneto.
 Vedlė – **pelėda Ona** (kalba tuo pačiu moterišku balsu kaip visi įrašai).
 Žaidimai: **Raidės** (Ežys Domas), **Skaičiai** (Bebras Kęstas), **Poros** (Voverė Vėja),
 po kas antro žaidimo – judesio pertraukėlė su Stirniuku Tadu.
+Skiltis **Galvosūkiai** (pelėda Ona): Surūšiuok, Miško eismas, Spalvų sudoku, Tangramas,
+Paslėptas takas, Skaičių takas – po 20 lygių nuo lengvo iki sunkaus; kitas lygis atsirakina įveikus ankstesnį.
 
 ## Įdiegimas ir paleidimas
 
@@ -43,6 +45,8 @@ Savo įrašą įdėk tuo pačiu failo vardu ir paleisk `npm run build`. Plačiau
 | Sąsajos animacijos | `src/ui/motion.js` (GSAP) |
 | Piešimo užduotys (650 „Nupiešk …!“) | `src/config/draw-items.js` (žodžiai galininku); įrašai `public/assets/audio/draw/` – `python scripts/regina/make_audio_regina.py` sugeneruoja trūkstamus |
 | Portretai (avatarai, porų kortelės) | `npm run portraits` – sugeneruoja iš rig dalių į `public/assets/characters/portraits/` |
+| Galvosūkių lygiai | `npm run brain-levels` (`scripts/brain/gen-levels.mjs` → `src/config/brain/*.json`, patikrinta sprendėjais); tangramo figūros – `src/config/tangram-shapes.js` (tikrina `node scripts/brain/check-tangram.mjs`); takų lygiai – `src/config/brain-levels.js` |
+| Galvosūkių iliustracijos | `public/assets/brain/` (Magnific, spalvotų pieštukų stilius) |
 | Gyvi veikėjai | `src/character/character.js` (Web Animations API), dalys – `public/assets/rigs/{veikejas}/`, sukimosi taškai – `src/rigs/{veikejas}.json` |
 
 Progresas (žvaigždutės) saugomas tik įrenginyje (`localStorage`). Jokios analitikos,

@@ -1,5 +1,6 @@
 import { DRAW_CATEGORIES, ALL_DRAW_ITEMS } from './draw-items.js';
 import { getDrawDone } from '../storage.js';
+import { BRAIN_TILES } from './brain-levels.js';
 
 // Žaidimų sąrašas: meniu kortelės, matematikos skiltis ir kiekvieno žaidimo lygiai.
 // levels[i]: { label – mygtuko tekstas, tiles – mažas vaizdelis mygtuke, wide – platūs langeliai }.
@@ -144,11 +145,25 @@ export const PLAY_GAMES = [
 const PLAY_HUB = { id: 'playhub', char: 'veja', title: 'Žaidimai', greet: 'ka_zaisime', hub: PLAY_GAMES };
 PLAY_GAMES.forEach((g) => (g.parent = PLAY_HUB));
 
+// Galvosūkiai: po 20 lygių, kiekvienas kitas atsirakina perėjus ankstesnį. Lygių duomenys – brain-levels.js.
+const brainLevels = (id) => BRAIN_TILES[id].map((tiles, i) => ({ label: `${i + 1}`, tiles }));
+export const BRAIN_GAMES = [
+  { id: 'sort', char: 'ona', title: 'Surūšiuok', icon: 'cards', img: 'brain/sort.webp', progressive: true, levels: brainLevels('sort') },
+  { id: 'traffic', char: 'ona', title: 'Miško eismas', icon: 'logs', img: 'brain/traffic.webp', progressive: true, levels: brainLevels('traffic') },
+  { id: 'sudoku', char: 'ona', title: 'Spalvų sudoku', icon: 'cards', img: 'brain/sudoku.webp', progressive: true, levels: brainLevels('sudoku') },
+  { id: 'tangram', char: 'ona', title: 'Tangramas', icon: 'cards', img: 'brain/tangram.webp', progressive: true, levels: brainLevels('tangram') },
+  { id: 'path', char: 'ona', title: 'Paslėptas takas', icon: 'run', img: 'brain/path.webp', progressive: true, levels: brainLevels('path') },
+  { id: 'trail', char: 'ona', title: 'Skaičių takas', icon: 'plusminus', img: 'brain/trail.webp', progressive: true, levels: brainLevels('trail') },
+];
+const BRAIN_HUB = { id: 'brainhub', char: 'ona', title: 'Galvosūkiai', greet: 'galvosukiai', hub: BRAIN_GAMES };
+BRAIN_GAMES.forEach((g) => (g.parent = BRAIN_HUB));
+
 // Meniu kortelės.
 export const GAMES = [
   { id: 'letters', char: 'domas', title: 'Raidės', levels: easyHard(['A', 'M', 'S'], ['E', 'Ę', 'Ė', 'I']) },
   MATH_HUB,
   PLAY_HUB,
+  BRAIN_HUB,
   { id: 'grade2', char: 'gedas', cardIcon: 'skull', title: 'Antrokams', levels: GRADE2_TOPICS.map(({ label, tiles }) => ({ label, tiles })) },
 ];
 

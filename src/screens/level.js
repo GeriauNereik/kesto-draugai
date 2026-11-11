@@ -32,7 +32,7 @@ export function levelScreen(root, { game, onLevel, onHome }) {
   };
 
   root.append(
-    h('section', { class: `screen level${many ? ' level-many' : ''}` }, [
+    h('section', { class: `screen level${many ? ' level-many' : ''}${levels.length > 12 ? ' level-lots' : ''}` }, [
       h('header', { class: 'topbar' }, [
         iconButton({ icon: 'home', ariaLabel: 'Atgal', onClick: onHome }),
         many ? h('h1', { class: 'level-title', text: game.title }) : null,
@@ -43,6 +43,11 @@ export function levelScreen(root, { game, onLevel, onHome }) {
       ]),
     ])
   );
+  // Daug lygių: parodom tą, kurį dabar žaisti (paskutinį atrakintą)
+  if (levels.length > 12) {
+    const btns = root.querySelectorAll('.level-btn:not(.locked)');
+    btns[btns.length - 1]?.scrollIntoView({ block: 'center' });
+  }
   char.speak('phrases/pasiruoses');
 }
 

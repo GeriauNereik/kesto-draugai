@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "icons": "node scripts/make-icons.mjs",
     "portraits": "node scripts/make-portraits.mjs",
+    "brain-levels": "node scripts/brain/gen-levels.mjs",
     "admin": "vite --config admin/vite.config.js"
   },
   "devDependencies": {

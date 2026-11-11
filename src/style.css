@@ -4073,3 +4073,377 @@ input {
   .save-preview-wrap { grid-row: span 3; }
   .save-preview { max-height: 60vh; }
 }
+
+/* =====================================================================
+   Galvosūkiai (src/games/brain/)
+   ===================================================================== */
+.hub-pic img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.brain-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-weight: 700;
+}
+.brain-level { font-size: 1.15rem; color: var(--brown); }
+.brain-moves { font-size: 1rem; color: var(--brown-soft); font-variant-numeric: tabular-nums; }
+.brain-toolbar { display: flex; justify-content: center; gap: 12px; flex: none; }
+.brain-toolbar:empty { display: none; }
+.brain-tool { width: 56px; height: 56px; }
+.brain-tool:disabled { opacity: 0.35; }
+
+/* --- Surūšiuok --- */
+.sort-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  container-type: size;
+}
+.sort-row {
+  /* daikto dydis: telpa į aukštį (eilės × krepšelio aukštis) ir į plotį (krepšelių eilėje) */
+  --spare-h: calc(96px + var(--rows) * 22px);
+  --spare-w: 16px;
+  --item: min(64px, calc((100cqh - var(--spare-h)) / (var(--rows) * (var(--cap) + 0.9))), calc((100cqw - var(--spare-w)) / var(--per) - 24px));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 18px 10px;
+  width: calc(var(--per) * (var(--item) + 14px) + (var(--per) - 1) * 10px + 2px);
+  max-width: 100%;
+}
+
+.sort-tube {
+  position: relative;
+  width: calc(var(--item) + 14px);
+  height: calc(var(--item) * var(--cap) + var(--item) * 0.9);
+  padding: 0 4px 8px;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 10px 10px 22px 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.9));
+  border: 3px solid #c9a27a;
+  border-top-width: 0;
+  box-shadow: inset 0 -6px 0 #e7cfae, var(--shadow-sm);
+  transition: border-color var(--t), background var(--t);
+}
+.sort-tube.selected { border-color: var(--sage); }
+.sort-tube.full { border-color: var(--ochre); background: #fff8e1; }
+.sort-item {
+  width: var(--item);
+  height: var(--item);
+  object-fit: contain;
+  pointer-events: none;
+  transition: transform 160ms ease;
+}
+.sort-item.lifted { transform: translateY(calc(var(--item) * -0.75)); }
+
+/* --- Miško eismas --- */
+.traffic-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  container-type: size;
+}
+.traffic-board {
+  --cell: calc(100% / var(--n));
+  position: relative;
+  width: min(100cqw - 24px, 100cqh - 90px, 520px);
+  aspect-ratio: 1;
+  border-radius: 18px;
+  background:
+    linear-gradient(90deg, rgba(90, 56, 37, 0.06) 1px, transparent 1px) 0 0 / var(--cell) var(--cell),
+    linear-gradient(rgba(90, 56, 37, 0.06) 1px, transparent 1px) 0 0 / var(--cell) var(--cell),
+    #e9f5d9;
+  box-shadow: inset 0 0 0 6px #b98a62, var(--shadow);
+  touch-action: none;
+}
+/* anga dešinėje vežimėlio eilėje */
+.traffic-exit {
+  position: absolute;
+  right: -6px;
+  top: calc(var(--row) * 100% / 6 + 6px);
+  height: calc(100% / 6 - 12px);
+  width: 14px;
+  border-radius: 0 8px 8px 0;
+  background: #e9f5d9;
+}
+.traffic-car {
+  position: absolute;
+  left: calc(var(--c) * 100% / 6);
+  top: calc(var(--r) * 100% / 6);
+  width: calc(var(--w) * 100% / 6);
+  height: calc(var(--h) * 100% / 6);
+  padding: 5px;
+  touch-action: none;
+  cursor: grab;
+  transition: left 160ms ease, top 160ms ease;
+}
+.traffic-car.dragging { transition: none; cursor: grabbing; z-index: 2; }
+.traffic-car::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 999px;
+  border: 3px solid #6b4a3a;
+}
+/* rąstai: medienos spalva ir rievės galuose */
+.traffic-car.log-h::before {
+  background:
+    radial-gradient(circle at calc(100% - var(--rr, 14px)) 50%, #f1d3a6 0 9px, #d2a877 10px 11px, transparent 12px),
+    linear-gradient(180deg, #c9946b, #b07d57 55%, #94664a);
+}
+.traffic-car.log-v::before {
+  background:
+    radial-gradient(circle at 50% calc(100% - 14px), #f1d3a6 0 9px, #d2a877 10px 11px, transparent 12px),
+    linear-gradient(90deg, #c9946b, #b07d57 55%, #94664a);
+}
+.traffic-car.target::before { background: linear-gradient(180deg, #ff8a78, #e5533d); border-color: #9c2f22; border-radius: 16px; }
+.traffic-car.target img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.traffic-car.target:has(img)::before { opacity: 0.25; }
+.traffic-car.leaving { transition: transform 700ms ease-in !important; transform: translateX(200%) !important; }
+
+/* --- Spalvų sudoku --- */
+.sdk-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  container-type: size;
+}
+.sdk-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--n), minmax(0, 1fr));
+  width: min(100cqw - 16px, 100cqh - var(--item) - 40px, 480px);
+  aspect-ratio: 1;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #b98a62;
+  gap: 2px;
+  padding: 4px;
+  box-shadow: var(--shadow);
+}
+.sdk-cell {
+  background: #fffaf0;
+  display: grid;
+  place-items: center;
+  padding: 10%;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 6px;
+  transition: background var(--t);
+}
+.sdk-cell img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.sdk-cell.given { background: #f3e6d0; }
+.sdk-cell.placed { background: #e6f7ea; }
+.sdk-cell.sel { background: #fff1c7; box-shadow: inset 0 0 0 4px var(--ochre); }
+/* storesnės linijos tarp blokelių (šešėliu – langeliai lieka vienodo dydžio) */
+.sdk-cell.bt { box-shadow: inset 0 4px 0 #b98a62; }
+.sdk-cell.bl { box-shadow: inset 4px 0 0 #b98a62; }
+.sdk-cell.bt.bl { box-shadow: inset 4px 4px 0 #b98a62; }
+.sdk-wrap { --item: min(60px, calc((100cqw - 8px * var(--n)) / var(--n))); }
+.sdk-palette { display: flex; justify-content: center; gap: 8px; flex: none; }
+.sdk-item {
+  width: var(--item);
+  height: var(--item);
+  padding: 6px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  border: 3px solid transparent;
+}
+.sdk-item img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.sdk-item.sel { border-color: var(--ochre); background: #fff1c7; }
+.sdk-item.done { opacity: 0.35; }
+
+/* --- Tangramas --- */
+.tg-wrap { position: relative; width: 100%; height: 100%; }
+.tg-svg { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; overflow: visible; }
+.tg-shadow { fill: #d8c6ad; stroke: #d8c6ad; stroke-width: 0.06; stroke-linejoin: round; }
+.tg-hint { fill: none; stroke: #b99d7c; stroke-width: 0.05; stroke-dasharray: 0.18 0.14; }
+.tg-tray-line { stroke: rgba(90, 56, 37, 0.15); stroke-width: 0.05; stroke-dasharray: 0.3 0.2; }
+.tg-piece {
+  stroke: #5a3825;
+  stroke-width: 0.07;
+  stroke-linejoin: round;
+  cursor: grab;
+  filter: drop-shadow(0 0.06px 0.08px rgba(0, 0, 0, 0.25));
+}
+.tg-piece.dragging { cursor: grabbing; }
+.tg-piece.locked { cursor: default; filter: none; }
+.tg-svg.done .tg-piece { stroke-width: 0.04; }
+
+/* --- Paslėptas takas --- */
+.path-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  container-type: size;
+}
+.path-goal { font-weight: 700; color: var(--sage-dark); font-size: 0.95rem; }
+.path-grid {
+  --cell: min(calc((100cqw - 40px) / var(--cols)), calc((100cqh - 130px) / var(--rows)), 84px);
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  grid-template-rows: repeat(var(--rows), var(--cell));
+  padding: 8px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #8fd3ff, #5bb8f0);
+  box-shadow: inset 0 0 0 4px #cdeafc, var(--shadow);
+}
+.path-stone {
+  margin: 10%;
+  border-radius: 46% 54% 50% 50% / 52% 48% 52% 48%;
+  background: radial-gradient(circle at 35% 30%, #f2ece0, #c9bca6 70%);
+  box-shadow: 0 4px 0 #9c8d74;
+  transition: background var(--t), box-shadow var(--t);
+}
+.path-stone.lit,
+.path-stone.done { background: radial-gradient(circle at 35% 30%, #fff3c4, #ffc531 70%); box-shadow: 0 4px 0 #c98a00; }
+.path-stone.start { background: radial-gradient(circle at 35% 30%, #e6f7ea, #7fd36b 70%); box-shadow: 0 4px 0 #2e9a48; }
+.path-grid.watch .path-stone { pointer-events: none; }
+.path-walker {
+  position: absolute;
+  left: calc(8px + var(--c, 0) * var(--cell));
+  top: calc(8px + var(--r, 0) * var(--cell));
+  width: var(--cell);
+  height: var(--cell);
+  padding: calc(var(--cell) * 0.04);
+  object-fit: contain;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.25));
+  translate: 0 calc(var(--cell) * -0.12);
+  pointer-events: none;
+  transition: left 260ms ease, top 260ms ease;
+}
+
+/* --- Skaičių takas --- */
+.trail-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; container-type: size; }
+.trail-wrap { padding: 8px; box-sizing: border-box; }
+.trail-field {
+  --stone: clamp(34px, min(calc(60cqw / var(--cols)), calc(60cqh / var(--rows))), 92px);
+  position: relative;
+  width: min(100cqw - 16px, calc((100cqh - 16px) * var(--cols) / var(--rows)));
+  aspect-ratio: var(--cols) / var(--rows);
+  max-height: 100cqh;
+  border-radius: 24px;
+  background: radial-gradient(circle at 30% 20%, #e9f7dc, #bfe3a4);
+  box-shadow: inset 0 0 0 4px #d8efc4, var(--shadow);
+}
+.trail-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.trail-lines polyline { fill: none; stroke: #ff9f43; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2 9; }
+.trail-stone {
+  position: absolute;
+  width: var(--stone);
+  height: calc(var(--stone) * 0.86);
+  transform: translate(-50%, -50%);
+  border-radius: 48% 52% 46% 54% / 55% 50% 50% 45%;
+  background: radial-gradient(circle at 35% 30%, #fbf7ee, #cfc3ad 72%);
+  box-shadow: 0 5px 0 #9c8d74;
+  font: 800 calc(var(--stone) * 0.4) / 1 'Baloo 2', system-ui, sans-serif;
+  color: #4a3b2a;
+}
+.trail-field.ops .trail-stone { font-size: calc(var(--stone) * 0.3); }
+.trail-stone.done { background: radial-gradient(circle at 35% 30%, #fff3c4, #ffc531 72%); box-shadow: 0 5px 0 #c98a00; }
+
+/* --- Skiltis su daug žaidimų (Galvosūkiai): tinklelis su stačiomis kortelėmis --- */
+.game-card:nth-child(5) { background: #f1e9ff; --strip: #b99af0; }
+.game-card:nth-child(5) .card-title { color: #7a4fc4; }
+.game-card:nth-child(6) { background: #e2f6f3; --strip: #6fcfbf; }
+.game-card:nth-child(6) .card-title { color: #1f8f7d; }
+.menu-cards.many {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: row;
+  grid-auto-columns: auto;
+  grid-auto-rows: minmax(0, 1fr);
+}
+.menu-cards.many .game-card {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  justify-items: center;
+  text-align: center;
+  padding: 10px 8px 14px;
+  row-gap: 2px;
+}
+.menu-cards.many .card-img {
+  grid-row: auto;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  min-height: 0;
+  align-self: center;
+}
+.menu-cards.many .card-title { font-size: 1.25rem; line-height: 1.1; align-self: center; }
+.menu-cards.many .card-stars { align-self: center; justify-content: center; }
+@media (orientation: landscape) {
+  .menu-cards.many { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* --- Labai daug lygių (Galvosūkiai, 20): kompaktiškas tinklelis, tik numeris --- */
+.level-lots .level-opts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 8px;
+  width: min(100%, 520px);
+}
+.level-lots .level-btn {
+  min-height: 0;
+  aspect-ratio: 1;
+  padding: 0;
+  font-size: 1.6rem;
+  border-radius: 22px;
+}
+.level-lots .lvl-preview { display: none; }
+.level-lots .lvl-lock svg { width: 22px; height: 22px; }
+.level-lots .level-btn:has(.lvl-lock) { font-size: 0; }
+.level-lots .level-opt .stars-sm .star { width: 16px; height: 16px; }
+.level-lots .level-opt { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+@media (orientation: landscape) {
+  .level-lots .level-opts { grid-template-columns: repeat(5, minmax(0, 1fr)); width: min(100%, 640px); }
+}
+
+@media (orientation: landscape) {
+  .path-goal { display: none; }
+  .path-grid { --cell: min(calc((100cqw - 110px) / var(--cols)), calc((100cqh - 24px) / var(--rows)), 84px); }
+}
+
+/* --- Galvosūkiai gulsčiame ekrane: įrankiai šone, lenta per visą aukštį --- */
+@media (orientation: landscape) {
+  .sort-wrap,
+  .path-wrap,
+  .traffic-wrap { flex-direction: row; gap: 20px; }
+  .sort-wrap .brain-toolbar,
+  .path-wrap .brain-toolbar,
+  .traffic-wrap .brain-toolbar { flex-direction: column; }
+  .sort-row { --spare-h: calc(var(--rows) * 22px + 16px); --spare-w: 96px; }
+  .traffic-board { width: min(100cqw - 110px, 100cqh - 16px, 520px); }
+  .sdk-wrap { flex-direction: row; gap: 18px; --item: min(56px, calc((100cqh - 8px * var(--n)) / var(--n))); }
+  .sdk-wrap .sdk-palette { flex-direction: column; flex-wrap: wrap; max-height: 100cqh; }
+  .sdk-grid { width: min(100cqh - 16px, 100cqw - var(--item) * 2 - 40px, 480px); }
+}

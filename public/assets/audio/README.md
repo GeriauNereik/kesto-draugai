@@ -63,7 +63,7 @@ kad vaikas girdėtų skirtumą.
 `1.mp3` „vienas“, `2.mp3` „du“, `3.mp3` „trys“, `4.mp3` „keturi“, `5.mp3` „penki“,
 `6.mp3` „šeši“, `7.mp3` „septyni“, `8.mp3` „aštuoni“, `9.mp3` „devyni“, `10.mp3` „dešimt“.
 
-## `phrases/` – frazės (31)
+## `phrases/` – frazės (38)
 
 Tekstai taip pat yra `src/config/phrases.js`.
 
@@ -103,6 +103,13 @@ Frazės su **[vardas]** ekrane rodomos su vaiko vardu („Labas, Jonai!“). Įr
 | `baigta_2.mp3` | Šaunu[, vardas]! Tu surinkai dvi žvaigždutes! |
 | `baigta_3.mp3` | Puiku[, vardas]! Tu surinkai tris žvaigždutes! |
 | `tadas_pertrauka.mp3` | Laikas pajudėti[, vardas]! Pašokinėk kartu su manimi penkis kartus! |
+| `galvosukiai.mp3` | Pamankštinkime protą! (Galvosūkių skiltis) |
+| `sort_intro.mp3` | Sudėk vienodus daiktus į tą patį krepšelį! |
+| `traffic_intro.mp3` | Pastumdyk rąstus, kad vežimėlis išvažiuotų! |
+| `sudoku_intro.mp3` | Kiekvienoje eilutėje ir stulpelyje turi būti po vieną kiekvieno daikto. |
+| `tangram_intro.mp3` | Sudėk figūrą iš detalių! |
+| `path_intro.mp3` | Įsimink taką ir pereik jį! |
+| `trail_intro.mp3` | Spausk akmenėlius iš eilės! |
 
 Iš viso: 63 failai (32 raidės + 10 skaičių + 21 frazė). Garso efektai (paspaudimai, skambesiai) sintezuojami programoje ir failų nereikia.
 
