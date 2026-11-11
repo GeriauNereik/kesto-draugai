@@ -213,6 +213,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,webp,png,svg,woff2,mp3}'],
         // bandomieji rig'ai – tik kūrimui; 649 piešimo frazės (10 MB) – ne iš anksto, o kai prireikia
         globIgnores: ['**/assets/rigs/_*/**', '**/assets/audio/draw/**'],
+        // Admin panelė (dist/admin) – atskiras puslapis: žaidimo SW jos neperima ir nesaugo talpykloje.
+        navigateFallbackDenylist: [/\/admin\//],
         runtimeCaching: [
           {
             urlPattern: /\/assets\/audio\/draw\/.*\.mp3$/,

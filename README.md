@@ -86,13 +86,10 @@ Atnaujinus versiją, programėlė atsinaujina pati ją atidarius (su internetu).
 
 ## Admin panelė
 
-Atskira nuo žaidimo, veikia kompiuteryje:
+Internete (veikia bet kada, iš bet kurio įrenginio): **<https://geriaunereik.github.io/kesto-draugai/admin/>**
+– įkeliama automatiškai kartu su žaidimu (`npm run build` sukompiliuoja ją į `dist/admin/`).
 
-```bash
-npm run admin
-```
-
-Atsidaro <http://localhost:5180>. Prisijungiama Firebase admin paskyra (`ADMIN_EMAIL` faile
+Vietinė versija kūrimui: `npm run admin` → <http://localhost:5180>. Prisijungiama Firebase admin paskyra (`ADMIN_EMAIL` faile
 `src/sync/config.js` ir `firestore.rules` turi sutapti). Matosi kiekvienas įrenginys ir jo žaidėjai:
 kiek laiko žaista per 7 dienas, kas žaista ir nupiešta. Galima uždėti užraktą su kodu ir žinute
 (vienam žaidėjui arba visiems) – telefone žaisti bus galima tik suvedus kodą.
