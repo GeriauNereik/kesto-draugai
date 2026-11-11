@@ -15,6 +15,8 @@ import { SORT_LEVELS } from '../../config/brain-levels.js';
 import { brainShell, starsByMoves, ITEMS, ITEM_BASE } from './base.js';
 
 const DEMO_UNTIL = 2; // tiek pirmųjų lygių ranka parodo, kaip žaisti
+const HINTS_UNTIL = 4; // iki šio lygio tinkami stiklainiai visada sužaliuoja; vėliau – tik po kelių klaidų
+const HINT_AFTER = 2; // nuo 5 lygio: po tiek netinkamų ėjimų įjungiamos užuominos
 const DRAG_PX = 10; // nuo kiek pikselių paspaudimas tampa tempimu
 const src = (k) => `${ITEM_BASE}${ITEMS[k]}.webp`;
 
@@ -99,8 +101,9 @@ export function sortGame(root, { level, onHome, onFinish }) {
       el.replaceChildren(...slots, h('span', { class: 'sort-arrow', 'aria-hidden': 'true' }));
       el.classList.toggle('selected', held === i);
       el.classList.toggle('full', isFull(t));
-      el.classList.toggle('can', held !== null && canDrop(held, i));
-      el.classList.toggle('cannot', held !== null && held !== i && !canDrop(held, i));
+      const hints = level <= HINTS_UNTIL || wrongs >= HINT_AFTER;
+      el.classList.toggle('can', hints && held !== null && canDrop(held, i));
+      el.classList.toggle('cannot', hints && held !== null && held !== i && !canDrop(held, i));
     });
     const doneKinds = new Set(tubes.filter(isFull).map((t) => t[0]));
     goalChips.forEach((c) => c.classList.toggle('done', doneKinds.has(+c.dataset.k)));
@@ -139,11 +142,12 @@ export function sortGame(root, { level, onHome, onFinish }) {
     wrongs++;
     if (tubes[to].length >= cap) shell.char.show('Šis stiklainis jau pilnas!');
     else shell.char.show('Dėti galima tik ant tokio pat daikto arba į tuščią stiklainį.');
-    // po kelių klaidų – parodom, kur galima dėti (sužaliuoja ir tada, kai daiktas jau padėtas atgal)
-    if (wrongs >= 2 && held === null) {
+    // po kelių klaidų – įjungiam užuominas ir parodom, kur galima dėti
+    if (wrongs === HINT_AFTER && level > HINTS_UNTIL) setTimeout(() => !shell.done && shell.char.show('Padėsiu: žali stiklainiai rodo, kur galima dėti.'), 1400);
+    if (wrongs >= HINT_AFTER && held === null) {
       held = from;
       render();
-    }
+    } else if (wrongs >= HINT_AFTER) render();
   }
 
   // ---------- bakstelėjimas ir tempimas (ui/drag.js – veikia ir senesniuose iPhone) ----------

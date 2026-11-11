@@ -8,6 +8,8 @@ import { burst } from '../../ui/fx.js';
 import { randomPraise } from '../../config/phrases.js';
 import { SFX_GAP, afterPraise } from '../common.js';
 import { stop } from '../../audio.js';
+import { heardBefore } from '../../heard.js';
+import { PHRASES } from '../../config/phrases.js';
 
 /**
  * shell: { screen, board, char, setMoves(n), setTools({undo, restart}), win(stars, el) }
@@ -15,6 +17,8 @@ import { stop } from '../../audio.js';
  */
 export function brainShell(root, { level, introKey, introText, onHome, onFinish, tools = {} }) {
   const say = () => shell.char.speak(`phrases/${introKey}`, introText);
+  // pradžioje balsu – tik pirmą kartą (vėliau tik tekstas burbule)
+  const sayFirst = () => (heardBefore(`phrases/${introKey}`) ? shell.char.show(introText || PHRASES[introKey] || '') : say());
   const shell = gameShell(root, { charId: 'ona', total: 1, onHome, onRepeat: say });
   shell.screen.classList.add('brain');
 
@@ -24,7 +28,8 @@ export function brainShell(root, { level, introKey, introText, onHome, onFinish,
   shell.screen.querySelector('.progress')?.replaceWith(info);
 
   const btn = (icon, label, fn) => {
-    const b = h('button', { type: 'button', class: 'tool-btn brain-tool', 'aria-label': label, title: label, html: ICONS[icon] });
+    // ikona ir užrašas po ja – kad būtų aišku, ką mygtukas daro
+    const b = h('button', { type: 'button', class: 'tool-btn brain-tool', 'aria-label': label, title: label }, [h('span', { class: 'brain-tool-icon', html: ICONS[icon] }), h('span', { class: 'brain-tool-label', text: label })]);
     onTap(b, () => (sfx('tap'), fn()));
     return b;
   };
@@ -63,7 +68,7 @@ export function brainShell(root, { level, introKey, introText, onHome, onFinish,
     },
   };
   shell.char.setEmotion('think');
-  say();
+  sayFirst();
   return api;
 }
 

@@ -11,7 +11,7 @@ export function resultScreen(root, { game, starCount, isBest, failed = false, on
   const char = character(game.char, { emotion: failed ? 'encourage' : 'happy', size: 'lg' });
   const actions = h('div', { class: 'result-actions' }, [
     onNext && !failed ? button({ label: 'Kitas lygis', icon: 'next', cls: 'btn-xl', onClick: onNext }) : null,
-    button({ label: failed ? 'Bandyk dar' : 'Žaisti dar', icon: 'replay', variant: onNext && !failed ? 'secondary' : 'primary', cls: 'btn-xl', onClick: onAgain }),
+    button({ label: failed ? 'Bandyti dar kartą' : 'Kartoti šį lygį', icon: 'replay', variant: onNext && !failed ? 'secondary' : 'primary', cls: 'btn-xl', onClick: onAgain }),
     button({ label: 'Į meniu', icon: 'home', variant: 'secondary', cls: 'btn-xl', onClick: onMenu }),
   ]);
 

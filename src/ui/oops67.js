@@ -1,14 +1,41 @@
 // Pelėda Ona su „6–7“ judesiu: jei žaidime per trumpą laiką padaroma daug klaidų,
 // apačioje trumpam (≈2,5 s) iššoka Ona, sūpuoja sparnus aukštyn-žemyn, o virš jų iššoka „6“ ir „7“.
-// Netrukdo žaisti (nepaspaudžiama), pasirodo ne dažniau kaip kas 2 min. Kadrai – Magnific (Freepik) iliustracija
+// Netrukdo žaisti (nepaspaudžiama), pasirodo ne dažniau kaip kas 2 min ir ne daugiau kaip 3 kartus per 2 val. tam pačiam vaikui. Kadrai – Magnific (Freepik) iliustracija
 // ir jos veidrodinis atspindys (public/assets/characters/ona67/).
 import { h } from './dom.js';
 import { onSfx, sfx } from '../sfx.js';
+import { currentProfile } from '../storage.js';
 
 const IMG = `${import.meta.env.BASE_URL}assets/characters/ona67/`;
 const WINDOW_MS = 30_000; // per kiek laiko skaičiuojamos klaidos
 const MISTAKES = 4; // kiek klaidų – ir pasirodo Ona
 const COOLDOWN_MS = 120_000;
+// kad neatsibostų: tam pačiam vaikui ne daugiau kaip MAX_SHOWS kartų per BLOCK_MS (2 val.)
+const MAX_SHOWS = 3;
+const BLOCK_MS = 2 * 60 * 60 * 1000;
+const STORE = 'kd-oops67';
+
+function shows() {
+  try {
+    const all = JSON.parse(localStorage.getItem(STORE)) || {};
+    const id = currentProfile()?.id || 'anon';
+    return { all, id, list: (all[id] || []).filter((t) => Date.now() - t < BLOCK_MS) };
+  } catch {
+    return { all: {}, id: 'anon', list: [] };
+  }
+}
+function allowed() {
+  return shows().list.length < MAX_SHOWS;
+}
+function remember() {
+  const { all, id, list } = shows();
+  all[id] = [...list, Date.now()];
+  try {
+    localStorage.setItem(STORE, JSON.stringify(all));
+  } catch {
+    /* be atminties – tiesiog rodys pagal laiko tarpą */
+  }
+}
 const BEATS = 8; // sparnų mostų skaičius
 const BEAT_MS = 300;
 
@@ -23,6 +50,7 @@ function inGame() {
 function show() {
   showing = true;
   lastShown = Date.now();
+  remember();
   const el = h('div', { class: 'oops67', 'aria-hidden': 'true' }, [
     h('img', { class: 'oops67-a', src: `${IMG}a.webp`, alt: '', draggable: 'false' }),
     h('img', { class: 'oops67-b', src: `${IMG}b.webp`, alt: '', draggable: 'false' }),
@@ -63,7 +91,7 @@ export function setupOops67() {
     if (name !== 'wrong' || !inGame()) return;
     recent = recent.filter((t) => now - t < WINDOW_MS);
     recent.push(now);
-    if (recent.length >= MISTAKES && !showing && now - lastShown > COOLDOWN_MS) {
+    if (recent.length >= MISTAKES && !showing && now - lastShown > COOLDOWN_MS && allowed()) {
       recent = [];
       setTimeout(show, 450); // po klaidos garso
     }

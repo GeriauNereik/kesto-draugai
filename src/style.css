@@ -3032,7 +3032,20 @@ input {
 .brain-moves { font-size: 1rem; color: var(--brown-soft); font-variant-numeric: tabular-nums; }
 .brain-toolbar { display: flex; justify-content: center; gap: 12px; flex: none; }
 .brain-toolbar:empty { display: none; }
-.brain-tool { width: 56px; height: 56px; }
+.brain-tool {
+  width: auto;
+  min-width: 78px;
+  height: 58px;
+  padding: 4px 12px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+.brain-tool-icon { display: grid; place-items: center; }
+.brain-tool-icon svg { width: 24px; height: 24px; }
+.brain-tool-label { font-size: 0.78rem; font-weight: 800; line-height: 1.1; white-space: nowrap; }
 .brain-tool:disabled { opacity: 0.35; }
 
 /* --- Surūšiuok --- */
@@ -4013,3 +4026,38 @@ input {
 .game-card:nth-child(6n + 2) .card-title { color: var(--ochre-dark); }
 .game-card:nth-child(6n + 3) .card-title { color: var(--coral-dark); }
 .game-card:nth-child(6n + 4) .card-title { color: var(--blue-dark); }
+
+/* =====================================================================
+   Pertraukėlė: Tadas šokinėja per kartelę (src/screens/break.js)
+   ===================================================================== */
+.break-char { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.break-talk .char-frame { display: none; }
+.break-talk { justify-content: center; }
+.tadas-stage {
+  position: relative;
+  width: min(88vw, 52vh, 460px);
+  aspect-ratio: 1.55;
+  cursor: pointer;
+}
+.tadas-pole {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 36%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.tadas-deer {
+  --x: 0;
+  position: absolute;
+  bottom: 2%;
+  width: 30%;
+  /* --x: 0 – kairėje, 100 – dešinėje (tarp jų – 70 % scenos pločio) */
+  left: calc(var(--x) * 0.7%);
+  z-index: 2;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 6px rgba(90, 56, 37, 0.25));
+}
+@media (orientation: landscape) {
+  .tadas-stage { width: min(48vw, 58vh, 460px); }
+}

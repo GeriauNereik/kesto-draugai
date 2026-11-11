@@ -1,4 +1,6 @@
 import { wait, pulse } from '../ui/dom.js';
+import { heardBefore } from '../heard.js';
+import { PHRASES } from '../config/phrases.js';
 import { randomPraise } from '../config/phrases.js';
 import { stop } from '../audio.js';
 import { sfx } from '../sfx.js';
@@ -19,6 +21,13 @@ export const INTRO_MAX = 700; // ilgiau nelaukiam – užduotis pasirodo, o paai
  */
 export async function intro(shell, round, key, { full = false } = {}) {
   shell.char.setEmotion('think');
+  // Paaiškinimas balsu – tik pirmą kartą; vėliau tik tekstas (garsiakalbiu galima išklausyti vėl).
+  if (heardBefore(key)) {
+    const text = PHRASES[key.replace(/^phrases\//, '')];
+    if (text) shell.char.show(text);
+    await wait(700);
+    return round.alive;
+  }
   const spoken = shell.char.speak(key);
   if (full) {
     await spoken;
