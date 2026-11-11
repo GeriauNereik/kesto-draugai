@@ -3992,3 +3992,84 @@ input {
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* =====================================================================
+   Piešinio išsaugojimas (src/ui/save-drawing.js)
+   ===================================================================== */
+.tool-btn.tool-save { color: var(--sage-dark); }
+.save-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: calc(var(--safe-t) + 12px) calc(var(--safe-r) + 12px) calc(var(--safe-b) + 12px) calc(var(--safe-l) + 12px);
+  background: rgba(40, 25, 15, 0.45);
+  animation: fade 200ms ease-out;
+}
+.save-card {
+  width: min(100%, 520px);
+  max-height: 100%;
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.save-title { margin: 0; font-size: 1.3rem; font-weight: 700; }
+.save-preview-wrap {
+  background: #f3ece1;
+  border-radius: var(--r-sm);
+  padding: 8px;
+  display: grid;
+  place-items: center;
+}
+.save-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 42vh;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  /* telefone: paspaudus ir palaikius – „Išsaugoti nuotrauką“ */
+  -webkit-touch-callout: default;
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+.save-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 700; }
+.save-banner-opts { display: flex; flex-direction: column; gap: 10px; }
+.save-text {
+  height: 52px;
+  border-radius: var(--r-sm);
+  border: 2px solid var(--line);
+  padding: 0 14px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  background: var(--bg);
+  outline: none;
+}
+.save-text:focus { border-color: var(--sage); }
+.save-styles { display: flex; gap: 8px; }
+.save-style {
+  flex: 1;
+  min-height: 48px;
+  border-radius: 999px;
+  background: var(--c);
+  color: #fff;
+  font-weight: 700;
+  border: 3px solid transparent;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+}
+.save-style.on { border-color: var(--brown); box-shadow: 0 0 0 3px #fff inset; }
+.save-note { margin: 0; min-height: 1.2em; color: var(--sage-dark); font-weight: 700; }
+.save-actions { display: flex; gap: 10px; }
+.save-actions .btn { flex: 1; }
+.save-actions .save-cancel { flex: 0 0 auto; }
+@media (orientation: landscape) and (max-height: 500px) {
+  .save-card { width: min(100%, 760px); display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+  .save-title, .save-note, .save-actions { grid-column: 1 / -1; }
+  .save-preview-wrap { grid-row: span 3; }
+  .save-preview { max-height: 60vh; }
+}

@@ -6,7 +6,8 @@ import { gameShell } from '../ui/game-shell.js';
 import { createRound, SFX_GAP } from './common.js';
 import { DRAW_CATEGORIES, ALL_DRAW_ITEMS, drawId } from '../config/draw-items.js';
 import { randomPraise } from '../config/phrases.js';
-import { getDrawn, setDrawn, addToJar } from '../storage.js';
+import { getDrawn, setDrawn, addToJar, currentProfile } from '../storage.js';
+import { openSaveSheet } from '../ui/save-drawing.js';
 import { createPainter } from '../ui/painter.js';
 import { ICONS } from '../ui/icons.js';
 import { sfx } from '../sfx.js';
@@ -95,10 +96,23 @@ export function drawGame(root, { level, onHome, onFinish }) {
     paper.classList.toggle('mirror-on', on);
   });
 
+  // Išsaugoti piešinį (su juostele apačioje ir savo tekstu) – telefone į Nuotraukas.
+  const saveBtn = tb('download', 'Išsaugoti piešinį', () => {
+    const name = currentProfile()?.name;
+    const d = new Date();
+    const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    openSaveSheet({
+      canvas,
+      defaultText: name ? `${name} nupiešė ${item}` : `Nupiešiau ${item}`,
+      filename: `piesinys-${drawId(item)}-${date}.png`,
+    });
+  }, 'tool-save');
+
   const toolsRow = h('div', { class: 'tool-row' }, [
     ...TOOLS.map(([id, label]) => (toolBtns[id] = tb(id, label, () => (painter.set({ tool: id }), select(toolBtns, id))))),
     h('span', { class: 'tool-sep', 'aria-hidden': 'true' }),
     undoBtn,
+    saveBtn,
   ]);
   const sizesEl = SIZES.map(([px, label]) => {
     const b = h('button', { type: 'button', class: 'size-btn', 'aria-label': label, title: label }, h('span', { class: 'size-dot', style: `width:${Math.max(6, px)}px;height:${Math.max(6, px)}px` }));
