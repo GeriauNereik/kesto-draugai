@@ -1,6 +1,6 @@
 // Ona: „Tangramas“ – sudėk figūrą iš detalių. Detalės tempiamos ant silueto; teisingai padėta detalė prilimpa.
-// 1–6 lygiai: detalės jau tinkamai pasuktos (tik nutempti). Nuo 7 lygio – bakstelėjus detalė pasisuka 90°.
-// 1–10 lygiai: siluete matyti detalių kontūrai (užuominos); vėliau – tik siluetas.
+// 1–3 lygiai: detalės jau tinkamai pasuktos (tik nutempti). Nuo 4 lygio – bakstelėjus detalė pasisuka 90°.
+// 1–5 lygiai: siluete matyti detalių kontūrai (užuominos); vėliau – tik siluetas.
 // Figūros – src/config/tangram-shapes.js (patikrintos: nepersidengia, vientisos).
 import { h } from '../../ui/dom.js';
 import { sfx } from '../../sfx.js';
@@ -10,8 +10,8 @@ import { brainShell, seeded } from './base.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const COLORS = ['#4cb963', '#3fa9f5', '#ffc531', '#ff7a68', '#a970ff', '#ff9f43', '#2ec4b6'];
-const ROTATE_FROM = 7;
-const HINTS_UNTIL = 10;
+const ROTATE_FROM = 4;
+const HINTS_UNTIL = 5;
 const SNAP = 0.9; // gardelės vienetais
 
 const centroid = (pts) => [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];

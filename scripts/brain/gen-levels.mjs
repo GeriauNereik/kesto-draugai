@@ -31,10 +31,10 @@ const shuffle = (r, a) => {
 //    Ėjimas – viršutinis daiktas į tuščią krepšelį arba ant tokio pat daikto.
 // =====================================================================
 const SORT_PARAMS = [
-  [2, 3, 1], [2, 4, 1], [3, 3, 1], [3, 4, 2], [3, 4, 1],
-  [4, 4, 2], [4, 4, 2], [4, 4, 1], [5, 4, 2], [5, 4, 2],
-  [5, 4, 1], [6, 4, 2], [6, 4, 2], [6, 4, 2], [7, 4, 2],
-  [7, 4, 2], [7, 4, 2], [8, 4, 2], [8, 4, 2], [9, 4, 2],
+  [3, 3, 1], [3, 4, 2], [3, 4, 1], [4, 4, 2], [4, 4, 1],
+  [5, 4, 2], [5, 4, 2], [5, 4, 1], [6, 4, 2], [6, 4, 2],
+  [6, 4, 1], [7, 4, 2], [7, 4, 2], [7, 4, 2], [8, 4, 2],
+  [8, 4, 2], [8, 4, 2], [9, 4, 2], [9, 4, 2], [9, 4, 2],
 ]; // [rūšių, talpa, tuščių krepšelių]
 
 function sortKey(tubes) {
@@ -99,8 +99,11 @@ function sortSolve(start, cap, limit = 400000) {
   }
   return null;
 }
+const SORT_TRIES = 10;
 function genSort() {
   return SORT_PARAMS.map(([n, cap, empties], li) => {
+    let best = null;
+    let found = 0;
     for (let attempt = 0; ; attempt++) {
       const r = rng(1000 + li * 97 + attempt);
       const kinds = shuffle(r, [0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, n);
@@ -112,8 +115,12 @@ function genSort() {
       if (tubes.some((t) => t.length === cap && t.every((x) => x === t[0]))) continue; // jau surūšiuotas
       const par = sortSolve(tubes, cap);
       if (par == null) continue;
-      return { cap, tubes, par };
+      // iš kelių tinkamų išmaišymų imam sunkiausią (daugiausia ėjimų)
+      if (!best || par > best.par) best = { cap, tubes, par };
+      if (++found >= SORT_TRIES) break;
     }
+    console.log(`  rūšiuok ${li + 1}: ${n} rūš., norma ${best.par}`);
+    return best;
   });
 }
 
@@ -122,8 +129,8 @@ function genSort() {
 // =====================================================================
 const N = 6;
 const EXIT_ROW = 2;
-const TRAFFIC_TARGET = [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-const TRAFFIC_BLOCKERS = [1, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11];
+const TRAFFIC_TARGET = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 24];
+const TRAFFIC_BLOCKERS = [3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 12];
 
 function grid(cars) {
   const g = Array.from({ length: N }, () => Array(N).fill(-1));
@@ -203,7 +210,7 @@ function genTraffic() {
       if (moves == null || moves < 2 && target > 1) continue;
       if (!best || Math.abs(moves - target) < Math.abs(best.par - target)) best = { cars, par: moves };
       if (moves === target) break;
-      if (moves >= target && li >= 14 && attempt > 3000) break;
+      if (moves >= target && li >= 14 && attempt > 6000) break;
     }
     levels.push(best);
     console.log(`  eismas ${li + 1}: norma ${best.par} (tikslas ${target}), rąstų ${best.cars.length - 1}`);
@@ -216,9 +223,9 @@ function genTraffic() {
 // =====================================================================
 const SUDOKU_PARAMS = [
   // [dydis, blokelio aukštis, blokelio plotis (0 – be blokelių), tuščių langelių]
-  [3, 0, 0, 2], [3, 0, 0, 3], [3, 0, 0, 4], [3, 0, 0, 5],
-  [4, 2, 2, 4], [4, 2, 2, 5], [4, 2, 2, 6], [4, 2, 2, 7], [4, 2, 2, 8], [4, 2, 2, 9], [4, 2, 2, 10], [4, 2, 2, 11],
-  [6, 2, 3, 10], [6, 2, 3, 12], [6, 2, 3, 14], [6, 2, 3, 16], [6, 2, 3, 18], [6, 2, 3, 20], [6, 2, 3, 22], [6, 2, 3, 24],
+  [4, 2, 2, 6], [4, 2, 2, 7], [4, 2, 2, 8], [4, 2, 2, 9], [4, 2, 2, 10], [4, 2, 2, 11], [4, 2, 2, 12],
+  [6, 2, 3, 12], [6, 2, 3, 14], [6, 2, 3, 16], [6, 2, 3, 18], [6, 2, 3, 20], [6, 2, 3, 21], [6, 2, 3, 22],
+  [6, 2, 3, 23], [6, 2, 3, 24], [6, 2, 3, 25], [6, 2, 3, 26], [6, 2, 3, 27], [6, 2, 3, 28],
 ];
 function sudokuSolutions(g, n, bh, bw, limit = 2) {
   let count = 0;
