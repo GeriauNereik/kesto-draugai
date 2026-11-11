@@ -4061,3 +4061,16 @@ input {
 @media (orientation: landscape) {
   .tadas-stage { width: min(48vw, 58vh, 460px); }
 }
+
+/* Miško bėgimas: žetonų skaitiklis */
+.run-coins {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+  margin-right: auto;
+}
+.run-coins img { width: 22px; height: 22px; object-fit: contain; }
+.run-coins b { min-width: 1.4em; text-align: left; }
+.run-coins-final { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-weight: 700; color: var(--ochre-dark); }
+.run-coins-final img { width: 24px; height: 24px; object-fit: contain; }

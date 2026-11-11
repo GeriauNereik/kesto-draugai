@@ -1,4 +1,5 @@
 // „Miško bėgimas“ (kaip Chrome dinozauras): veikėjas bėga, vaikas bakstelėja – šoka per kliūtis.
+// Pakeliui renkami žetonai (+10 taškų), kartais pasitaiko magnetas – 10 s pritraukia žetonus.
 // Kuo ilgiau bėgi, tuo greičiau ir tankiau kliūtys. Rekordas saugomas žaidėjui ir visada matomas.
 // Pradžioje vaikas pasirenka vieną iš 4 šio žaidimo veikėjų; kiekvienas turi savo rekordą.
 import { h, onTap } from '../ui/dom.js';
@@ -16,6 +17,11 @@ export const RUNNERS = [
   { id: 'meska', label: 'Meška' },
 ];
 const runnerImg = (id) => `${import.meta.env.BASE_URL}assets/runner/${id}.webp`;
+// Bėgimo kadrai (4: žingsnis, kelis aukštyn, kitas žingsnis, kitas kelis) – rankos ir kojos juda.
+const runFrame = (id, i) => `${import.meta.env.BASE_URL}assets/runner/run/${id}-${i}.webp`;
+const PICKUP = (n) => `${import.meta.env.BASE_URL}assets/runner/${n}.webp`;
+const COIN_POINTS = 10; // kiek taškų už žetoną
+const MAGNET_SECS = 10; // kiek laiko magnetas traukia žetonus
 const LAST_KEY = 'kd.runner.last';
 const GAME = 'runner';
 const recordKey = (id) => `${GAME}:${id}`;
@@ -103,6 +109,9 @@ function drawTrimmed(ctx, img, cx, bottom, hh) {
 
 export function runnerGame(root, { onHome }) {
   const heroes = Object.fromEntries(RUNNERS.map((r) => [r.id, loadImg(runnerImg(r.id))]));
+  const frames = Object.fromEntries(RUNNERS.map((r) => [r.id, [0, 1, 2, 3].map((i) => loadImg(runFrame(r.id, i)))]));
+  const coinImg = loadImg(PICKUP('coin'));
+  const magnetImg = loadImg(PICKUP('magnet'));
   let who = RUNNERS.find((r) => r.id === readLast()) || RUNNERS[0];
   let hero = heroes[who.id];
   const items = Object.fromEntries(ITEM_OBSTACLES.map((o) => [o.img, loadImg(itemImg(o.img))]));
@@ -111,6 +120,7 @@ export function runnerGame(root, { onHome }) {
   const canvas = h('canvas', { class: 'run-canvas', 'aria-label': 'Bėgimo laukas. Bakstelėk, kad pašoktum.' });
   const hiEl = h('span', { class: 'run-hi' });
   const scoreEl = h('span', { class: 'run-score' });
+  const coinsEl = h('span', { class: 'run-coins' }, [h('img', { src: PICKUP('coin'), alt: '' }), h('b', { text: '0' })]);
   const hint = h('div', { class: 'run-hint' }, [h('b', { text: 'Bakstelėk – šok!' }), h('span', { text: 'Šok per kliūtis. Kuo toliau, tuo greičiau.' })]);
   const over = h('div', { class: 'run-over', hidden: true });
   const picker = h('div', { class: 'run-pick' });
@@ -118,7 +128,7 @@ export function runnerGame(root, { onHome }) {
   const screen = h('section', { class: 'screen runner' }, [
     h('header', { class: 'topbar' }, [
       iconButton({ icon: 'home', ariaLabel: 'Atgal', onClick: onHome }),
-      h('div', { class: 'run-scores', 'aria-live': 'off' }, [hiEl, scoreEl]),
+      h('div', { class: 'run-scores', 'aria-live': 'off' }, [coinsEl, hiEl, scoreEl]),
     ]),
     stage,
   ]);
@@ -156,6 +166,13 @@ export function runnerGame(root, { onHome }) {
   let vy = 0;
   let holding = false;
   let obstacles = [];
+  let coins = []; // { x, y (aukštis virš žemės), got, t }
+  let pops = []; // „+10“ užrašai
+  let magnet = null; // magnetas trasoje { x, y }
+  let magnetT = 0; // kiek sekundžių dar veikia
+  let nextMagnet = 0; // po kiek px pasirodys kitas magnetas
+  let nextRow = 0; // po kiek px – žetonų eilė ant žemės
+  let coinCount = 0;
   let nextGap = 0;
   let scroll = 0; // fono slinkimas
   let runPhase = 0;
@@ -174,6 +191,7 @@ export function runnerGame(root, { onHome }) {
   function showScores() {
     hiEl.textContent = `Rekordas ${fmt(best)}`;
     scoreEl.textContent = fmt(score);
+    coinsEl.lastChild.textContent = String(coinCount);
   }
 
   function reset() {
@@ -182,7 +200,14 @@ export function runnerGame(root, { onHome }) {
     y = 0;
     vy = 0;
     obstacles = [];
+    coins = [];
+    pops = [];
+    magnet = null;
+    magnetT = 0;
+    coinCount = 0;
     base = Math.max(260, W * 0.55);
+    nextMagnet = base * (20 + Math.random() * 15); // pirmas magnetas – po ~20–35 s
+    nextRow = W * 1.6;
     speed = base;
     nextGap = W * 0.9;
     lastMilestone = 0;
@@ -267,6 +292,27 @@ export function runnerGame(root, { onHome }) {
       span += (i ? size * 0.05 : 0) + o.w;
       x += o.w + size * 0.05;
     }
+    // Žetonų lankas virš kliūčių – surenkamas šokant
+    if (Math.random() < 0.55) {
+      const n = 3 + Math.floor(Math.random() * 3);
+      const mid = W + 20 + span / 2;
+      const step = size * 0.42;
+      for (let i = 0; i < n; i++) {
+        const t = n === 1 ? 0.5 : i / (n - 1);
+        coins.push({ x: mid + (i - (n - 1) / 2) * step, y: size * (0.55 + 1.05 * 4 * t * (1 - t)), got: false, t: 0 });
+      }
+    }
+  }
+
+  /** Žetonų eilė ant žemės (tarp kliūčių) – tik jei toje vietoje nėra kliūties. */
+  function spawnRow() {
+    const n = 4 + Math.floor(Math.random() * 4);
+    const step = size * 0.45;
+    const x0 = W + 20;
+    const x1 = x0 + n * step;
+    if (obstacles.some((o) => o.x < x1 + size && o.x + o.w > x0 - size)) return false;
+    for (let i = 0; i < n; i++) coins.push({ x: x0 + i * step, y: size * 0.32, got: false, t: 0 });
+    return true;
   }
 
   function makeObstacle(small) {
@@ -335,6 +381,51 @@ export function runnerGame(root, { onHome }) {
     for (const o of obstacles) o.x -= dx;
     obstacles = obstacles.filter((o) => o.x + o.w > -10);
 
+    // ---- žetonai ir magnetas ----
+    nextRow -= dx;
+    if (nextRow <= 0) nextRow = spawnRow() ? W * (0.9 + Math.random() * 1.4) : size * 2;
+    nextMagnet -= dx;
+    if (nextMagnet <= 0 && !magnet && magnetT <= 0) {
+      if (!obstacles.some((o) => o.x > W - size * 2)) magnet = { x: W + 20, y: size * (0.45 + Math.random() * 0.75) };
+      nextMagnet = magnet ? base * (35 + Math.random() * 25) : size * 3;
+    }
+    const hx = W * 0.14 + size / 2; // veikėjo centras
+    const hy = y + size * 0.5;
+    if (magnet) {
+      magnet.x -= dx;
+      if (Math.hypot(magnet.x - hx, magnet.y - hy) < size * 0.8) {
+        magnet = null;
+        magnetT = MAGNET_SECS;
+        sfx('fanfare');
+        pops.push({ x: hx, y: hy + size * 0.6, text: 'Magnetas!', t: 0 });
+      } else if (magnet.x < -size) magnet = null;
+    }
+    if (magnetT > 0) magnetT = Math.max(0, magnetT - dt);
+    const pull = magnetT > 0 ? W * 0.6 : 0;
+    for (const c of coins) {
+      c.t += dt;
+      if (c.got) continue;
+      c.x -= dx;
+      // magnetas: artimi žetonai skrenda prie veikėjo
+      const d = Math.hypot(c.x - hx, c.y - hy);
+      if (pull && d < pull && c.x > hx - size) {
+        const k = Math.min(1, (dt * (900 + speed)) / Math.max(1, d));
+        c.x += (hx - c.x) * k;
+        c.y += (hy - c.y) * k;
+      }
+      if (Math.hypot(c.x - hx, c.y - hy) < size * 0.5) {
+        c.got = true;
+        c.t = 0;
+        coinCount++;
+        score += COIN_POINTS;
+        sfx('star', coinCount % 3);
+        pops.push({ x: c.x, y: c.y, text: `+${COIN_POINTS}`, t: 0 });
+      }
+    }
+    coins = coins.filter((c) => (c.got ? c.t < 0.25 : c.x > -size));
+    for (const p of pops) p.t += dt;
+    pops = pops.filter((p) => p.t < 0.8);
+
     score += dx / (base * 0.1);
     const m = Math.floor(score / 100);
     if (m > lastMilestone) {
@@ -371,6 +462,7 @@ export function runnerGame(root, { onHome }) {
         h('p', { class: 'run-oi', text: isRecord && final > 0 ? 'Naujas rekordas!' : 'Oi!' }),
         h('p', { class: 'run-final' }, [h('b', { text: String(final) }), ` ${points(final)}`]),
         h('p', { class: 'run-best', text: `Rekordas: ${best}` }),
+        coinCount ? h('p', { class: 'run-coins-final' }, [h('img', { src: PICKUP('coin'), alt: '' }), ` ${coinCount} × ${COIN_POINTS} taškų`]) : null,
         again,
         other,
       ])
@@ -384,7 +476,80 @@ export function runnerGame(root, { onHome }) {
     ctx.clearRect(0, 0, W, H);
     drawBackground();
     for (const o of obstacles) drawObstacle(o);
+    drawPickups();
     drawHero();
+    drawPops();
+    drawMagnetHud();
+  }
+
+  // ---------- Žetonai, magnetas ----------
+  function drawPickups() {
+    const cs = size * 0.36;
+    for (const c of coins) {
+      const cx = c.x;
+      const cy = ground - c.y;
+      if (c.got) {
+        // paimtas – trumpai išsipučia ir išnyksta
+        ctx.globalAlpha = Math.max(0, 1 - c.t / 0.25);
+        const k = 1 + c.t * 3;
+        if (coinImg.complete && coinImg.naturalWidth) ctx.drawImage(coinImg, cx - (cs * k) / 2, cy - (cs * k) / 2, cs * k, cs * k);
+        ctx.globalAlpha = 1;
+        continue;
+      }
+      // „sukasi“: plotis pulsuoja
+      const sx = 0.75 + 0.25 * Math.abs(Math.cos(c.t * 4 + c.x * 0.01));
+      if (coinImg.complete && coinImg.naturalWidth) ctx.drawImage(coinImg, cx - (cs * sx) / 2, cy - cs / 2, cs * sx, cs);
+      else {
+        ctx.fillStyle = '#ffc531';
+        ctx.beginPath();
+        ctx.arc(cx, cy, cs / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    if (magnet) {
+      const ms = size * 0.55;
+      const by = Math.sin(performance.now() / 250) * size * 0.06;
+      ctx.fillStyle = 'rgba(255, 220, 120, 0.35)';
+      ctx.beginPath();
+      ctx.arc(magnet.x, ground - magnet.y + by, ms * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+      if (magnetImg.complete && magnetImg.naturalWidth) ctx.drawImage(magnetImg, magnet.x - ms / 2, ground - magnet.y - ms / 2 + by, ms, ms);
+    }
+  }
+
+  function drawPops() {
+    ctx.textAlign = 'center';
+    for (const p of pops) {
+      const a = Math.max(0, 1 - p.t / 0.8);
+      ctx.globalAlpha = a;
+      ctx.font = `800 ${Math.round(size * (p.text.length > 4 ? 0.22 : 0.26))}px 'Baloo 2', system-ui, sans-serif`;
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#5a3825';
+      ctx.fillStyle = '#ffd54f';
+      const yy = ground - p.y - p.t * size * 0.8;
+      ctx.strokeText(p.text, p.x, yy);
+      ctx.fillText(p.text, p.x, yy);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /** Magneto laikas – kampe ikona su mažėjančiu žiedu. */
+  function drawMagnetHud() {
+    if (magnetT <= 0) return;
+    const r = Math.max(22, size * 0.26);
+    const cx = 16 + r;
+    const cy = 14 + r;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = magnetT < 3 && Math.floor(magnetT * 4) % 2 ? '#ff9f43' : '#e5533d';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r - 3, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * magnetT) / MAGNET_SECS);
+    ctx.stroke();
+    if (magnetImg.complete && magnetImg.naturalWidth) ctx.drawImage(magnetImg, cx - r * 0.62, cy - r * 0.62, r * 1.24, r * 1.24);
   }
 
   // Debesėliai (lėtai slenka) ir saulė – kad aukštame ekrane dangus nebūtų tuščias.
@@ -518,22 +683,42 @@ export function runnerGame(root, { onHome }) {
   function drawHero() {
     const x = W * 0.14;
     const onGround = y < 0.5;
-    // Bėgimas: atšokinėjimas ir pasvirimas; ore – pasilenkia į priekį; žuvus – apvirsta.
-    const bob = state === 'run' && onGround ? Math.abs(Math.sin(runPhase)) * size * 0.06 : 0;
-    const tilt = state === 'over' ? -0.5 : onGround ? Math.sin(runPhase) * 0.06 : 0.12;
-    const squash = state === 'run' && onGround ? 1 - Math.abs(Math.cos(runPhase)) * 0.05 : 1;
+    const fr = frames[who.id];
+    const animated = fr.every((f) => f.complete && f.naturalWidth);
+    // Bėgimas: kadrai keičiasi (juda kojos ir rankos), šiek tiek atšokinėja; ore – kadras su pakeltu keliu; žuvus – apvirsta.
+    const bob = state === 'run' && onGround ? Math.abs(Math.sin(runPhase)) * size * (animated ? 0.03 : 0.06) : 0;
+    const tilt = state === 'over' ? -0.5 : onGround ? Math.sin(runPhase) * (animated ? 0.02 : 0.06) : 0.1;
+    const squash = state === 'run' && onGround && !animated ? 1 - Math.abs(Math.cos(runPhase)) * 0.05 : 1;
     // Šešėlis
     const shadow = Math.max(0.35, 1 - y / (size * 2));
     ctx.fillStyle = `rgba(90, 56, 37, ${0.18 * shadow})`;
     ctx.beginPath();
     ctx.ellipse(x + size / 2, ground + 2, size * 0.32 * shadow, size * 0.06, 0, 0, Math.PI * 2);
     ctx.fill();
-    if (!hero.complete || !hero.naturalWidth) return;
+    // magneto aura
+    if (magnetT > 0) {
+      const pulse = 1 + Math.sin(performance.now() / 160) * 0.06;
+      ctx.strokeStyle = 'rgba(229, 83, 61, 0.35)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(x + size / 2, ground - y - size * 0.5, size * 0.62 * pulse, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    let img = hero;
+    if (animated && state === 'run') img = onGround ? fr[Math.floor(runPhase / 1.35) % 4] : fr[1];
+    else if (animated && state === 'ready') img = fr[0];
+    if (!img.complete || !img.naturalWidth) return;
     ctx.save();
     ctx.translate(x + size / 2, ground - y - bob);
     ctx.rotate(tilt);
     ctx.scale(1, squash);
-    drawTrimmed(ctx, hero, 0, 1, size * 0.92); // +1 px – kojos ant žolės, ne virš jos
+    if (img === hero) drawTrimmed(ctx, img, 0, 1, size * 0.92); // +1 px – kojos ant žolės, ne virš jos
+    else {
+      // visi kadrai vienodo dydžio (paruošti iš anksto) – piešiam visą kadrą, apačia ant žemės
+      const hh = size * 0.98;
+      const ww = (hh * img.naturalWidth) / img.naturalHeight;
+      ctx.drawImage(img, -ww / 2, 1 - hh, ww, hh);
+    }
     ctx.restore();
   }
 
