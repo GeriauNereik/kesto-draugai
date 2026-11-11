@@ -104,12 +104,12 @@ Frazės su **[vardas]** ekrane rodomos su vaiko vardu („Labas, Jonai!“). Įr
 | `baigta_3.mp3` | Puiku[, vardas]! Tu surinkai tris žvaigždutes! |
 | `tadas_pertrauka.mp3` | Laikas pajudėti[, vardas]! Pašokinėk kartu su manimi penkis kartus! |
 | `galvosukiai.mp3` | Pamankštinkime protą! (Galvosūkių skiltis) |
-| `sort_intro.mp3` | Sudėk vienodus daiktus į tą patį krepšelį! |
+| `sort_intro.mp3` | Sudėk vienodus daiktus į tą patį stiklainį! |
 | `traffic_intro.mp3` | Pastumdyk rąstus, kad vežimėlis išvažiuotų! |
 | `sudoku_intro.mp3` | Kiekvienoje eilutėje ir stulpelyje turi būti po vieną kiekvieno daikto. |
 | `tangram_intro.mp3` | Sudėk figūrą iš detalių! |
 | `path_intro.mp3` | Įsimink taką ir pereik jį! |
-| `trail_intro.mp3` | Spausk akmenėlius iš eilės! |
+| `pipes_intro.mp3` | Pasuk vamzdžius, kad vanduo nutekėtų į tokios pat spalvos kubilą! |
 
 Iš viso: 63 failai (32 raidės + 10 skaičių + 21 frazė). Garso efektai (paspaudimai, skambesiai) sintezuojami programoje ir failų nereikia.
 

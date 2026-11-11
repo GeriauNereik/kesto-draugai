@@ -145,7 +145,7 @@ export const PLAY_GAMES = [
 const PLAY_HUB = { id: 'playhub', char: 'veja', title: 'Žaidimai', greet: 'ka_zaisime', hub: PLAY_GAMES };
 PLAY_GAMES.forEach((g) => (g.parent = PLAY_HUB));
 
-// Galvosūkiai: po 20 lygių, kiekvienas kitas atsirakina perėjus ankstesnį. Lygių duomenys – brain-levels.js.
+// Galvosūkiai: po 20 lygių (tangramas – 40), kiekvienas kitas atsirakina perėjus ankstesnį. Lygių duomenys – brain-levels.js.
 const brainLevels = (id) => BRAIN_TILES[id].map((tiles, i) => ({ label: `${i + 1}`, tiles }));
 export const BRAIN_GAMES = [
   { id: 'sort', char: 'ona', title: 'Surūšiuok', icon: 'cards', img: 'brain/sort.webp', progressive: true, levels: brainLevels('sort') },
@@ -153,7 +153,7 @@ export const BRAIN_GAMES = [
   { id: 'sudoku', char: 'ona', title: 'Spalvų sudoku', icon: 'cards', img: 'brain/sudoku.webp', progressive: true, levels: brainLevels('sudoku') },
   { id: 'tangram', char: 'ona', title: 'Tangramas', icon: 'cards', img: 'brain/tangram.webp', progressive: true, levels: brainLevels('tangram') },
   { id: 'path', char: 'ona', title: 'Paslėptas takas', icon: 'run', img: 'brain/path.webp', progressive: true, levels: brainLevels('path') },
-  { id: 'trail', char: 'ona', title: 'Skaičių takas', icon: 'plusminus', img: 'brain/trail.webp', progressive: true, levels: brainLevels('trail') },
+  { id: 'pipes', char: 'ona', title: 'Vandentiekis', icon: 'cards', img: 'brain/pipes.webp', progressive: true, levels: brainLevels('pipes') },
 ];
 const BRAIN_HUB = { id: 'brainhub', char: 'ona', title: 'Galvosūkiai', greet: 'galvosukiai', hub: BRAIN_GAMES };
 BRAIN_GAMES.forEach((g) => (g.parent = BRAIN_HUB));

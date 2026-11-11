@@ -3032,59 +3032,145 @@ input {
   gap: 12px;
   container-type: size;
 }
+/* tikslas: kokias rūšis surinkti */
+.sort-goal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--glass, rgba(255, 255, 255, 0.8));
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.95), var(--shadow-sm);
+  flex: none;
+}
+.sort-goal-chip {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f3ece1;
+  display: grid;
+  place-items: center;
+  transition: background-color 250ms ease, box-shadow 250ms ease;
+}
+.sort-goal-chip img { width: 80%; height: 80%; object-fit: contain; opacity: 0.55; filter: grayscale(0.6); transition: opacity 250ms ease, filter 250ms ease; }
+.sort-goal-chip.done { background: #dff3e3; box-shadow: 0 0 0 2px var(--sage); }
+.sort-goal-chip.done img { opacity: 1; filter: none; }
+.sort-goal-check {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--sage);
+  color: #fff;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  font-weight: 800;
+  transform: scale(0);
+  transition: transform 250ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.sort-goal-chip.done .sort-goal-check { transform: scale(1); }
+
 .sort-stage { position: relative; }
 .sort-row {
-  /* daikto dydis: telpa į aukštį (eilės × krepšelys su vieta pakeltam daiktui) ir į plotį */
-  --spare-h: calc(84px + var(--rows) * 18px);
+  /* daikto dydis: telpa į aukštį (eilės × stiklainis su vieta pakeltam daiktui) ir į plotį */
+  --spare-h: calc(150px + var(--rows) * 18px);
   --spare-w: 16px;
-  --item: min(64px, calc((100cqh - var(--spare-h) - var(--rows) * 14px) / (var(--rows) * (var(--cap) + 1.1))), calc((100cqw - var(--spare-w)) / var(--per) - 26px));
+  --item: min(62px, calc((100cqh - var(--spare-h)) / (var(--rows) * (var(--cap) + 1.15))), calc((100cqw - var(--spare-w)) / var(--per) - 30px));
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: flex-end;
-  gap: 18px 12px;
-  width: calc(var(--per) * (var(--item) + 16px) + (var(--per) - 1) * 12px + 2px);
+  gap: 14px 12px;
+  width: calc(var(--per) * (var(--item) + 20px) + (var(--per) - 1) * 12px + 2px);
   max-width: 100%;
 }
 .sort-tube {
   position: relative;
-  width: calc(var(--item) + 16px);
+  width: calc(var(--item) + 20px);
   /* viršuje – vieta pakeltam daiktui, kad jis niekada nebūtų nukirptas */
-  height: calc(var(--item) * (var(--cap) + 1.05) + 14px);
-  padding: calc(var(--item) * 0.9) 0 10px;
+  height: calc(var(--item) * (var(--cap) + 0.95) + 18px);
+  padding: calc(var(--item) * 0.85) 0 10px;
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
   justify-content: flex-start;
+  gap: 2px;
   background: none;
   transition: transform 200ms ease, opacity 200ms ease;
 }
-/* pats krepšelis – stiklinis indas be viršaus */
+/* stiklainis: stiklas su atspindžiu ir žiedu viršuje */
 .sort-tube::before {
   content: '';
   position: absolute;
-  inset: calc(var(--item) * 0.9) 0 0;
-  border-radius: 12px 12px 26px 26px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.7) 45%, rgba(255, 255, 255, 0.95));
-  border: 3px solid #d7b48c;
-  border-top: 0;
-  box-shadow: inset 0 -8px 0 rgba(215, 180, 140, 0.35), 0 6px 14px rgba(107, 74, 58, 0.12);
+  inset: calc(var(--item) * 0.85 - 6px) 0 0;
+  border-radius: 14px 14px 22px 22px;
+  background:
+    linear-gradient(90deg, transparent 12%, rgba(255, 255, 255, 0.9) 18%, transparent 30%),
+    linear-gradient(180deg, rgba(220, 240, 250, 0.55), rgba(200, 230, 245, 0.75));
+  border: 3px solid rgba(120, 170, 195, 0.75);
+  box-shadow: inset 0 -10px 0 rgba(150, 200, 220, 0.35), 0 6px 14px rgba(70, 110, 130, 0.15);
   transition: border-color 200ms ease, background 200ms ease, box-shadow 200ms ease;
   z-index: 0;
 }
-.sort-tube.selected::before { border-color: var(--ochre); }
+/* dangtelis – tik surinktam stiklainiui */
+.sort-tube::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: calc(var(--item) * 0.85 - 16px);
+  height: 16px;
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(180deg, #ffd45c, #e2a52a);
+  box-shadow: 0 2px 0 #b98216;
+  transform: translateY(-30px) scale(0.6);
+  opacity: 0;
+  transition: transform 350ms cubic-bezier(0.3, 1.5, 0.5, 1), opacity 200ms ease;
+  z-index: 2;
+}
+.sort-tube.full::after { transform: none; opacity: 1; }
+.sort-tube.full::before { border-color: #e2a52a; background: linear-gradient(90deg, transparent 12%, rgba(255, 255, 255, 0.9) 18%, transparent 30%), linear-gradient(180deg, #fff8e1, #ffefc0); }
+.sort-tube.selected::before { border-color: var(--ochre); box-shadow: 0 0 0 4px rgba(255, 197, 49, 0.35), 0 6px 14px rgba(70, 110, 130, 0.15); }
 .sort-tube.can::before {
   border-color: var(--sage);
-  background: linear-gradient(90deg, #effaf1, #e2f6e6 45%, #effaf1);
-  box-shadow: 0 0 0 4px rgba(76, 185, 99, 0.25), 0 6px 14px rgba(107, 74, 58, 0.12);
+  background: linear-gradient(90deg, transparent 12%, rgba(255, 255, 255, 0.9) 18%, transparent 30%), linear-gradient(180deg, #e9f8ec, #d4f0da);
+  box-shadow: 0 0 0 5px rgba(76, 185, 99, 0.28), 0 6px 14px rgba(70, 110, 130, 0.15);
 }
-.sort-tube.can { animation: sort-invite 1.1s ease-in-out infinite; }
-.sort-tube.over::before { box-shadow: 0 0 0 7px rgba(76, 185, 99, 0.45); }
-.sort-tube.cannot { opacity: 0.55; }
-.sort-tube.full::before { border-color: var(--ochre); background: linear-gradient(90deg, #fff8e1, #fff1c4 45%, #fff8e1); }
-@keyframes sort-invite {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+.sort-tube.over::before { box-shadow: 0 0 0 8px rgba(76, 185, 99, 0.5); }
+.sort-tube.cannot { opacity: 0.5; }
+.sort-tube.demo-from::before { border-color: var(--ochre); }
+.sort-tube.demo-to::before { border-color: var(--sage); }
+/* rodyklė „dėk čia“ ant tinkamo stiklainio */
+.sort-arrow {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--item) * 0.85 - 30px);
+  width: 0;
+  height: 0;
+  margin-left: -10px;
+  border: 10px solid transparent;
+  border-top: 14px solid var(--sage);
+  opacity: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.sort-tube.can .sort-arrow { opacity: 1; animation: sort-arrow 0.9s ease-in-out infinite; }
+@keyframes sort-arrow { 50% { transform: translateY(6px); } }
+/* tuščia vieta – kiek dar telpa */
+.sort-slot {
+  position: relative;
+  z-index: 1;
+  width: calc(var(--item) * 0.62);
+  height: calc(var(--item) * 0.62);
+  margin: calc(var(--item) * 0.19) 0;
+  flex: none;
+  border-radius: 50%;
+  border: 2px dashed rgba(110, 160, 185, 0.45);
 }
 .sort-item {
   position: relative;
@@ -3096,9 +3182,17 @@ input {
   pointer-events: none;
   transition: transform 180ms cubic-bezier(0.3, 1.4, 0.5, 1);
 }
+/* tik viršutinį galima kelti – jis paryškintas baltu ratu */
+.sort-item.top {
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 56%, rgba(255, 255, 255, 0) 70%);
+  box-shadow: 0 0 0 2.5px rgba(255, 197, 49, 0.9);
+  padding: 3px;
+}
 .sort-item.lifted {
-  transform: translateY(calc(var(--item) * -0.85)) scale(1.08);
-  filter: drop-shadow(0 8px 6px rgba(90, 56, 37, 0.25));
+  transform: translateY(calc(var(--item) * -0.8)) scale(1.1);
+  filter: drop-shadow(0 8px 6px rgba(90, 56, 37, 0.3));
+  z-index: 4;
 }
 .sort-ghost {
   position: fixed;
@@ -3126,7 +3220,7 @@ input {
 .sort-hand.show { opacity: 1; }
 .sort-hand.press svg { transform: scale(0.85) translateY(4px); }
 @media (prefers-reduced-motion: reduce) {
-  .sort-tube.can { animation: none; }
+  .sort-tube.can .sort-arrow { animation: none; }
 }
 
 /* --- Miško eismas --- */
@@ -3149,8 +3243,10 @@ input {
   background:
     linear-gradient(90deg, rgba(90, 56, 37, 0.06) 1px, transparent 1px) 0 0 / var(--cell) var(--cell),
     linear-gradient(rgba(90, 56, 37, 0.06) 1px, transparent 1px) 0 0 / var(--cell) var(--cell),
-    #e9f5d9;
-  box-shadow: inset 0 0 0 6px #b98a62, var(--shadow);
+    radial-gradient(circle at 20% 15%, #f2fae6, transparent 45%),
+    radial-gradient(circle at 80% 85%, #d8edc4, transparent 50%),
+    #e6f3d6;
+  box-shadow: inset 0 0 0 6px #b98a62, inset 0 0 0 8px #a0744f, var(--shadow);
   touch-action: none;
 }
 /* anga dešinėje vežimėlio eilėje */
@@ -3161,8 +3257,21 @@ input {
   height: calc(100% / 6 - 12px);
   width: 14px;
   border-radius: 0 8px 8px 0;
-  background: #e9f5d9;
+  background: #e6f3d6;
 }
+/* rodyklė prie angos – kur turi išvažiuoti vežimėlis */
+.traffic-exit::after {
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  margin-left: 4px;
+  border: 9px solid transparent;
+  border-left: 12px solid #4cb963;
+  transform: translateY(-50%);
+  animation: exit-nudge 1.4s ease-in-out infinite;
+}
+@keyframes exit-nudge { 50% { transform: translate(5px, -50%); } }
 .traffic-car {
   position: absolute;
   left: calc(var(--c) * 100% / 6);
@@ -3175,34 +3284,20 @@ input {
   transition: left 160ms ease, top 160ms ease;
 }
 .traffic-car.dragging { transition: none; cursor: grabbing; z-index: 2; }
-.traffic-car::before {
-  content: '';
+.traffic-car img {
   position: absolute;
-  inset: 5px;
-  border-radius: 999px;
-  border: 3px solid #6b4a3a;
-}
-/* rąstai: medienos spalva ir rievės galuose */
-.traffic-car.log-h::before {
-  background:
-    radial-gradient(circle at calc(100% - var(--rr, 14px)) 50%, #f1d3a6 0 9px, #d2a877 10px 11px, transparent 12px),
-    linear-gradient(180deg, #c9946b, #b07d57 55%, #94664a);
-}
-.traffic-car.log-v::before {
-  background:
-    radial-gradient(circle at 50% calc(100% - 14px), #f1d3a6 0 9px, #d2a877 10px 11px, transparent 12px),
-    linear-gradient(90deg, #c9946b, #b07d57 55%, #94664a);
-}
-.traffic-car.target::before { background: linear-gradient(180deg, #ff8a78, #e5533d); border-color: #9c2f22; border-radius: 16px; }
-.traffic-car.target img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  object-fit: fill;
   pointer-events: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 3px 2px rgba(60, 40, 20, 0.28));
 }
-.traffic-car.target:has(img)::before { opacity: 0.25; }
+.traffic-car.target img { object-fit: contain; }
+.traffic-car svg { position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); pointer-events: none; overflow: visible; }
+.traffic-car.dragging svg { filter: drop-shadow(0 6px 5px rgba(60, 40, 20, 0.3)); }
+.traffic-car.dragging img { filter: drop-shadow(0 8px 6px rgba(60, 40, 20, 0.32)); transform: scale(1.03); }
 .traffic-car.leaving { transition: transform 700ms ease-in !important; transform: translateX(200%) !important; }
 
 /* --- Spalvų sudoku --- */
@@ -3210,63 +3305,103 @@ input {
   width: 100%;
   height: 100%;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
   container-type: size;
+  --item: min(58px, calc((100cqw - 40px) / var(--n)));
 }
+.sdk-board { position: relative; }
 .sdk-grid {
   display: grid;
   grid-template-columns: repeat(var(--n), minmax(0, 1fr));
   grid-template-rows: repeat(var(--n), minmax(0, 1fr));
-  width: min(100cqw - 16px, 100cqh - var(--item) - 40px, 480px);
+  width: min(100cqw - 16px, 100cqh - 16px, 480px);
   aspect-ratio: 1;
-  border-radius: 16px;
-  overflow: hidden;
+  border-radius: 18px;
   background: #b98a62;
   gap: 2px;
-  padding: 4px;
+  padding: 5px;
   box-shadow: var(--shadow);
 }
 .sdk-cell {
+  position: relative;
   background: #fffaf0;
   display: grid;
   place-items: center;
   padding: 10%;
   min-width: 0;
   min-height: 0;
-  border-radius: 6px;
+  border-radius: 7px;
   transition: background var(--t);
 }
 .sdk-cell img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
-.sdk-cell.given { background: #f3e6d0; }
-.sdk-cell.placed { background: #e6f7ea; }
-.sdk-cell.sel { background: #fff1c7; box-shadow: inset 0 0 0 4px var(--ochre); }
-/* storesnės linijos tarp blokelių (šešėliu – langeliai lieka vienodo dydžio) */
-.sdk-cell.bt { box-shadow: inset 0 4px 0 #b98a62; }
-.sdk-cell.bl { box-shadow: inset 4px 0 0 #b98a62; }
-.sdk-cell.bt.bl { box-shadow: inset 4px 4px 0 #b98a62; }
-.sdk-wrap { --item: min(60px, calc((100cqw - 8px * var(--n)) / var(--n))); }
-.sdk-palette { display: flex; justify-content: center; gap: 8px; flex: none; }
+.sdk-cell.given { background: #f1e2c8; }
+.sdk-cell.placed { background: #e3f5e7; }
+.sdk-cell.line { background: #fff6dc; }
+.sdk-cell.sel { background: #ffe89a; box-shadow: inset 0 0 0 4px var(--ochre); }
+/* blokeliai: tarp jų – platesnis tarpas (ryški riba), langeliai lieka vienodi */
+.sdk-cell.bt::before,
+.sdk-cell.bl::after {
+  content: '';
+  position: absolute;
+  background: #7a4f30;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.sdk-cell.bt::before { left: -2px; right: -2px; top: -4px; height: 5px; }
+.sdk-cell.bl::after { top: -2px; bottom: -2px; left: -4px; width: 5px; }
+/* klaidos priežastis: langelis su tokiu pat daiktu sumirksi */
+.sdk-cell.clash { animation: sdk-clash 1.3s ease; }
+@keyframes sdk-clash {
+  0%, 40%, 80% { background: #ffd2c9; box-shadow: inset 0 0 0 4px #e5533d; }
+  20%, 60%, 100% { box-shadow: inset 0 0 0 0 transparent; }
+}
+/* pasirinkimas prie langelio */
+.sdk-picker {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 4), var(--item));
+  gap: 6px;
+  padding: 8px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 0 0 2px var(--ochre), 0 14px 30px -8px rgba(90, 56, 37, 0.45);
+}
+.sdk-picker[hidden] { display: none; }
 .sdk-item {
+  position: relative;
   width: var(--item);
   height: var(--item);
   padding: 6px;
-  border-radius: 16px;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  border: 3px solid transparent;
+  border-radius: 14px;
+  background: #fbf3e4;
+  border: 2px solid transparent;
 }
+.sdk-item:active { border-color: var(--ochre); }
 .sdk-item img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
-.sdk-item.sel { border-color: var(--ochre); background: #fff1c7; }
-.sdk-item.done { opacity: 0.35; }
+/* sufleris: netinkamas daiktas perbrauktas */
+.sdk-item.no { opacity: 0.4; pointer-events: none; }
+.sdk-item.no::after {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 2px;
+  background: #e5533d;
+  transform: rotate(-35deg);
+}
 
 /* --- Tangramas --- */
 .tg-wrap { position: relative; width: 100%; height: 100%; }
 .tg-svg { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; overflow: visible; }
 .tg-shadow { fill: #d8c6ad; stroke: #d8c6ad; stroke-width: 0.06; stroke-linejoin: round; }
 .tg-hint { fill: none; stroke: #b99d7c; stroke-width: 0.05; stroke-dasharray: 0.18 0.14; }
+.tg-hint.strong { stroke-width: 0.1; stroke-dasharray: 0.22 0.12; animation: tg-hint 1.2s ease-in-out 3; }
+@keyframes tg-hint { 50% { stroke-width: 0.16; } }
 .tg-tray-line { stroke: rgba(90, 56, 37, 0.15); stroke-width: 0.05; stroke-dasharray: 0.3 0.2; }
 .tg-piece {
   stroke: #5a3825;
@@ -3326,35 +3461,6 @@ input {
   pointer-events: none;
   transition: left 260ms ease, top 260ms ease;
 }
-
-/* --- Skaičių takas --- */
-.trail-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; container-type: size; }
-.trail-wrap { padding: 8px; box-sizing: border-box; }
-.trail-field {
-  --stone: clamp(34px, min(calc(60cqw / var(--cols)), calc(60cqh / var(--rows))), 92px);
-  position: relative;
-  width: min(100cqw - 16px, calc((100cqh - 16px) * var(--cols) / var(--rows)));
-  aspect-ratio: var(--cols) / var(--rows);
-  max-height: 100cqh;
-  border-radius: 24px;
-  background: radial-gradient(circle at 30% 20%, #e9f7dc, #bfe3a4);
-  box-shadow: inset 0 0 0 4px #d8efc4, var(--shadow);
-}
-.trail-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.trail-lines polyline { fill: none; stroke: #ff9f43; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2 9; }
-.trail-stone {
-  position: absolute;
-  width: var(--stone);
-  height: calc(var(--stone) * 0.86);
-  transform: translate(-50%, -50%);
-  border-radius: 48% 52% 46% 54% / 55% 50% 50% 45%;
-  background: radial-gradient(circle at 35% 30%, #fbf7ee, #cfc3ad 72%);
-  box-shadow: 0 5px 0 #9c8d74;
-  font: 800 calc(var(--stone) * 0.4) / 1 'Baloo 2', system-ui, sans-serif;
-  color: #4a3b2a;
-}
-.trail-field.ops .trail-stone { font-size: calc(var(--stone) * 0.3); }
-.trail-stone.done { background: radial-gradient(circle at 35% 30%, #fff3c4, #ffc531 72%); box-shadow: 0 5px 0 #c98a00; }
 
 /* --- Skiltis su daug žaidimų (Galvosūkiai): tinklelis su stačiomis kortelėmis --- */
 .game-card:nth-child(5) { background: #f1e9ff; --strip: #b99af0; }
@@ -3424,11 +3530,11 @@ input {
   .sort-wrap .brain-toolbar,
   .path-wrap .brain-toolbar,
   .traffic-wrap .brain-toolbar { flex-direction: column; }
-  .sort-row { --spare-h: calc(var(--rows) * 18px + 16px); --spare-w: 96px; }
+  .sort-row { --spare-h: calc(var(--rows) * 18px + 70px); --spare-w: 96px; }
+  .sort-wrap .sort-goal { flex-direction: column; flex-wrap: wrap; max-height: 100cqh; border-radius: 24px; }
+  .sort-row { --spare-w: 150px; }
   .traffic-board { width: min(100cqw - 110px, 100cqh - 16px, 520px); }
-  .sdk-wrap { flex-direction: row; gap: 18px; --item: min(56px, calc((100cqh - 8px * var(--n)) / var(--n))); }
-  .sdk-wrap .sdk-palette { flex-direction: column; flex-wrap: wrap; max-height: 100cqh; }
-  .sdk-grid { width: min(100cqh - 16px, 100cqw - var(--item) * 2 - 40px, 480px); }
+  .sdk-wrap { --item: min(54px, calc((100cqh - 60px) / 3)); }
 }
 
 /* =====================================================================
@@ -3592,4 +3698,177 @@ input {
   .time-choices.n4 { width: auto; grid-template-columns: repeat(2, minmax(110px, 150px)); }
   .time-btn { height: clamp(52px, 17vh, 72px); }
   .clock-wrap { align-self: stretch; }
+}
+
+/* =====================================================================
+   Vandentiekis (src/games/brain/pipes.js)
+   ===================================================================== */
+.pipe-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  container-type: size;
+  /* langelis: telpa plotis ir aukštis (eilutės + statinių ir kubilų eilės + įrankiai) */
+  --cell: min(76px, calc((100cqw - 16px) / var(--cols)), calc((100cqh - 80px) / (var(--rows) + 2.3)));
+}
+.pipe-stage { display: flex; flex-direction: column; align-items: center; }
+.pipe-row {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  height: calc(var(--cell) * 1.15);
+}
+.pipe-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  grid-template-rows: repeat(var(--rows), var(--cell));
+  padding: 4px;
+  border-radius: 18px;
+  background:
+    linear-gradient(90deg, rgba(90, 56, 37, 0.07) 1px, transparent 1px) 4px 4px / var(--cell) var(--cell),
+    linear-gradient(rgba(90, 56, 37, 0.07) 1px, transparent 1px) 4px 4px / var(--cell) var(--cell),
+    #e3efd2;
+  box-shadow: inset 0 0 0 3px #c7b08e, var(--shadow);
+  margin: 0 -4px;
+}
+.pipe-cell {
+  position: relative;
+  width: var(--cell);
+  height: var(--cell);
+  padding: 0;
+  background: none;
+  border-radius: 10px;
+  --water: transparent;
+}
+.pipe-cell:active { background: rgba(255, 255, 255, 0.45); }
+.pipe-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.pipe-rot { transform-origin: 50px 50px; transform-box: view-box; transition: transform 220ms cubic-bezier(0.3, 1.3, 0.5, 1); }
+.pipe-out { stroke: #a88158; fill: none; stroke-linecap: butt; }
+.pipe-in { stroke: #ead3ad; fill: none; stroke-linecap: butt; }
+.pipe-water { stroke: var(--water); fill: none; stroke-linecap: butt; transition: stroke 250ms ease; }
+.pipe-out.fill { fill: #a88158; stroke: none; }
+.pipe-in.fill { fill: #ead3ad; stroke: none; }
+.pipe-water.fill { fill: var(--water); stroke: none; transition: fill 250ms ease; }
+.pipe-collar { fill: #c49a6c; stroke: #a88158; stroke-width: 2; }
+.pipe-cell.wet .pipe-water { filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8)); }
+/* čiaupas */
+.pipe-wheel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 62%;
+  height: 62%;
+  transform: translate(-50%, -50%) rotate(0deg);
+  transition: transform 300ms cubic-bezier(0.3, 1.3, 0.5, 1);
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgba(90, 30, 20, 0.35));
+}
+.pipe-cell.valve.closed .pipe-wheel { transform: translate(-50%, -50%) rotate(-90deg); }
+/* užsuktas – per vamzdį skersai raudonas užkardas */
+.pipe-gate {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10%;
+  height: 46%;
+  border-radius: 4px;
+  background: #e5533d;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+.pipe-cell.valve.closed .pipe-gate { opacity: 1; }
+.pipe-cell.valve:has(svg path[d*='L100 50']) .pipe-gate,
+.pipe-cell.valve:has(svg path[d*='L0 50']) .pipe-gate { transform: translate(-50%, -50%); }
+.pipe-cell.valve:has(svg path[d*='L50 0']) .pipe-gate { transform: translate(-50%, -50%) rotate(90deg); }
+.pipe-cell.valve::after {
+  content: '';
+  position: absolute;
+  inset: 6%;
+  border-radius: 12px;
+  border: 2px dashed rgba(229, 83, 61, 0.35);
+  pointer-events: none;
+}
+/* statinės */
+.pipe-src, .pipe-tank { position: relative; display: grid; place-items: center; }
+.pipe-src img, .pipe-tank img { position: relative; width: 92%; height: 92%; object-fit: contain; pointer-events: none; z-index: 1; }
+.pipe-drop {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 50%;
+  width: 34%;
+  height: 34%;
+  margin: -6% 0 0 -17%;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--w);
+  box-shadow: inset -3px 3px 0 rgba(255, 255, 255, 0.45), 0 0 0 3px #fff, 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+.pipe-stub {
+  position: absolute;
+  left: 50%;
+  width: calc(var(--cell) * 0.33);
+  margin-left: calc(var(--cell) * -0.165);
+  background: #ead3ad;
+  box-shadow: inset 0 0 0 3px #a88158;
+  z-index: 0;
+}
+.pipe-src .pipe-stub { bottom: -6px; height: 34%; background: linear-gradient(90deg, #a88158 0 12%, var(--w) 12% 88%, #a88158 88%); box-shadow: none; }
+.pipe-tank .pipe-stub { top: -6px; height: 30%; }
+.pipe-tank.filled .pipe-stub { background: linear-gradient(90deg, #a88158 0 12%, var(--got) 12% 88%, #a88158 88%); box-shadow: none; }
+/* kubilai: kokios spalvos reikia – lašas, atėjusi spalva – vanduo kubile */
+.pipe-need {
+  position: absolute;
+  z-index: 3;
+  right: 2%;
+  bottom: 6%;
+  width: 34%;
+  height: 34%;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--need);
+  box-shadow: inset -3px 3px 0 rgba(255, 255, 255, 0.45), 0 0 0 3px #fff, 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+.pipe-fill {
+  position: absolute;
+  z-index: 2;
+  left: 22%;
+  right: 22%;
+  top: 30%;
+  height: 22%;
+  border-radius: 50%;
+  background: var(--got);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+.pipe-tank.filled .pipe-fill { opacity: 0.9; transform: none; }
+.pipe-mark {
+  position: absolute;
+  z-index: 4;
+  left: 2%;
+  bottom: 8%;
+  width: 26%;
+  height: 26%;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: calc(var(--cell) * 0.18);
+  transform: scale(0);
+  transition: transform 250ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.pipe-tank.ok .pipe-mark { transform: scale(1); background: var(--sage); }
+.pipe-tank.ok .pipe-mark::before { content: '✓'; }
+.pipe-tank.bad .pipe-mark { transform: scale(1); background: #e5533d; }
+.pipe-tank.bad .pipe-mark::before { content: '✕'; }
+@media (orientation: landscape) {
+  .pipe-wrap { flex-direction: row; gap: 18px; --cell: min(70px, calc((100cqh - 8px) / (var(--rows) + 2.3)), calc((100cqw - 110px) / var(--cols))); }
+  .pipe-wrap .brain-toolbar { flex-direction: column; }
 }

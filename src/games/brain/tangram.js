@@ -1,6 +1,7 @@
 // Ona: „Tangramas“ – sudėk figūrą iš detalių. Detalės tempiamos ant silueto; teisingai padėta detalė prilimpa.
 // 1–3 lygiai: detalės jau tinkamai pasuktos (tik nutempti). Nuo 4 lygio – bakstelėjus detalė pasisuka 90°.
 // 1–5 lygiai: siluete matyti detalių kontūrai (užuominos); vėliau – tik siluetas.
+// Po kelių nesėkmingų bandymų (HINT_AFTER) siluete nupiešiami trūkstamų detalių kontūrai – detalių spalvomis.
 // Figūros – src/config/tangram-shapes.js (patikrintos: nepersidengia, vientisos).
 import { h } from '../../ui/dom.js';
 import { sfx } from '../../sfx.js';
@@ -13,6 +14,7 @@ const COLORS = ['#4cb963', '#3fa9f5', '#ffc531', '#ff7a68', '#a970ff', '#ff9f43'
 const ROTATE_FROM = 4;
 const HINTS_UNTIL = 5;
 const SNAP = 0.9; // gardelės vienetais
+const HINT_AFTER = 5; // po tiek nesėkmingų bandymų parodomi trūkstamų detalių kontūrai
 
 const centroid = (pts) => [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];
 const rot90 = ([x, y], k) => {
@@ -31,6 +33,7 @@ export function tangramGame(root, { level, onHome, onFinish }) {
   const rnd = seeded(7000 + level * 31);
   const canRotate = level >= ROTATE_FROM;
   let wrong = 0;
+  let missesSinceHint = 0;
 
   const shell = brainShell(root, { level, introKey: 'tangram_intro', onHome, onFinish });
   shell.setMoves(null);
@@ -92,7 +95,11 @@ export function tangramGame(root, { level, onHome, onFinish }) {
   const ptsAttr = (pts) => pts.map(([x, y]) => `${x},${y}`).join(' ');
   // siluetas
   slots.forEach((s) => svg.append(el('polygon', { points: ptsAttr(s.pts), class: 'tg-shadow' })));
-  if (level <= HINTS_UNTIL) slots.forEach((s) => svg.append(el('polygon', { points: ptsAttr(s.pts), class: 'tg-hint' })));
+  slots.forEach((s) => {
+    s.hintEl = el('polygon', { points: ptsAttr(s.pts), class: 'tg-hint' });
+    if (level > HINTS_UNTIL) s.hintEl.style.display = 'none';
+    svg.append(s.hintEl);
+  });
   svg.append(
     el(
       'line',
@@ -114,6 +121,20 @@ export function tangramGame(root, { level, onHome, onFinish }) {
     p.el.classList.toggle('locked', p.locked);
   }
   pieces.forEach(draw);
+
+  /** Užuomina: trūkstamų vietų kontūrai tos detalės spalva, kuri ten tinka. */
+  function showHint() {
+    const used = new Set();
+    slots.forEach((s) => {
+      if (s.filled) return;
+      const p = pieces.find((q, i) => !q.locked && !used.has(i) && q.type === s.type && [0, 1, 2, 3].some((r) => key(q.base.map((b) => rot90(b, r))) === s.shape));
+      if (p) used.add(pieces.indexOf(p));
+      s.hintEl.style.display = '';
+      s.hintEl.classList.add('strong');
+      if (p) s.hintEl.style.stroke = p.color;
+    });
+    shell.char.show('Žiūrėk – spalvoti kontūrai rodo, kur kuri detalė!');
+  }
 
   const toSvg = (e) => {
     const pt = svg.createSVGPoint();
@@ -186,7 +207,12 @@ export function tangramGame(root, { level, onHome, onFinish }) {
     const onFigure = p.pos[0] > fx0 - 0.5 && p.pos[0] < fx1 + 0.5 && p.pos[1] > fy0 - 0.5 && p.pos[1] < fy1 + 0.5;
     if (onFigure) {
       wrong++;
+      missesSinceHint++;
       sfx('wrong');
+      if (missesSinceHint >= HINT_AFTER) {
+        missesSinceHint = 0;
+        showHint();
+      }
       // jei forma tinka, bet pasukta ne taip – užuomina: veikėjas pasako
       if (canRotate && slots.some((s) => !s.filled && s.type === p.type && s.shape !== shape)) shell.char.show('Bakstelėk detalę, kad ji pasisuktų!');
     }

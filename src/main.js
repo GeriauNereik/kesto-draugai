@@ -46,7 +46,7 @@ import { trafficGame } from './games/brain/traffic.js';
 import { sudokuGame } from './games/brain/sudoku.js';
 import { tangramGame } from './games/brain/tangram.js';
 import { pathGame } from './games/brain/path.js';
-import { trailGame } from './games/brain/trail.js';
+import { pipesGame } from './games/brain/pipes.js';
 import { hubScreen } from './screens/hub.js';
 
 const GAME_MODULES = {
@@ -65,7 +65,7 @@ const GAME_MODULES = {
   sudoku: sudokuGame,
   tangram: tangramGame,
   path: pathGame,
-  trail: trailGame,
+  pipes: pipesGame,
 };
 
 const app = document.getElementById('app');

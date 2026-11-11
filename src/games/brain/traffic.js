@@ -10,6 +10,43 @@ const N = 6;
 const EXIT_ROW = 2;
 const CART = `${import.meta.env.BASE_URL}assets/brain/cart.webp`;
 
+/**
+ * Rąstas iš viršaus (SVG): žievė su rievėmis, šakos žymė, pjūvis su metinėmis rievėmis ir lapelis.
+ * Piešiamas gulsčias (ilgis len langelių × 1), stačiam – pasukamas.
+ */
+function logSvg(len, vertical, seed) {
+  const W = len * 100;
+  const H = 100;
+  const rnd = (n) => {
+    const x = Math.sin(seed * 97.3 + n * 13.1) * 43758.5453;
+    return x - Math.floor(x);
+  };
+  const y0 = 14;
+  const y1 = 86;
+  const streaks = [];
+  for (let i = 0; i < len * 3; i++) {
+    const x = 30 + rnd(i) * (W - 80);
+    const y = y0 + 12 + rnd(i + 20) * (y1 - y0 - 24);
+    const l = 30 + rnd(i + 40) * 40;
+    streaks.push(`<path d="M${x} ${y}q${l / 2} ${(rnd(i + 60) - 0.5) * 8} ${l} 0" />`);
+  }
+  const kx = 40 + rnd(7) * (W - 120);
+  const leafX = 30 + rnd(9) * (W - 90);
+  const g = `
+    <rect x="6" y="${y0 + 6}" width="${W - 12}" height="${y1 - y0}" rx="36" fill="rgba(60,35,15,.22)"/>
+    <rect x="4" y="${y0}" width="${W - 10}" height="${y1 - y0}" rx="36" fill="url(#bark)" stroke="#6b4429" stroke-width="5"/>
+    <g fill="none" stroke="#7c5233" stroke-width="4" stroke-linecap="round" opacity=".55">${streaks.join('')}</g>
+    <ellipse cx="${kx}" cy="${y0 + 24}" rx="9" ry="6" fill="#8a5c3a" stroke="#6b4429" stroke-width="3"/>
+    <ellipse cx="${W - 26}" cy="50" rx="20" ry="34" fill="#f2d7aa" stroke="#6b4429" stroke-width="5"/>
+    <ellipse cx="${W - 26}" cy="50" rx="12" ry="22" fill="none" stroke="#d9b07a" stroke-width="3"/>
+    <ellipse cx="${W - 26}" cy="50" rx="5" ry="9" fill="none" stroke="#d9b07a" stroke-width="3"/>
+    <path d="M${leafX} ${y0 + 2}c-2-10 4-16 14-16c0 9-5 15-14 16z" fill="#7fcf6b" stroke="#3f8f3a" stroke-width="2.5"/>`;
+  const defs = `<defs><linearGradient id="bark" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c99566"/><stop offset=".55" stop-color="#a87148"/><stop offset="1" stop-color="#8a5a37"/></linearGradient></defs>`;
+  return vertical
+    ? `<svg viewBox="0 0 ${H} ${W}" preserveAspectRatio="none">${defs}<g transform="translate(${H} 0) rotate(90)">${g}</g></svg>`
+    : `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${defs}${g}</svg>`;
+}
+
 export function trafficGame(root, { level, onHome, onFinish }) {
   const L = TRAFFIC_LEVELS[level - 1] || TRAFFIC_LEVELS[0];
   let cars = L.cars.map((c) => ({ ...c }));
@@ -45,7 +82,8 @@ export function trafficGame(root, { level, onHome, onFinish }) {
       role: 'button',
       'aria-label': i === 0 ? 'Vežimėlis' : c.d === 'h' ? 'Gulsčias rąstas' : 'Status rąstas',
     });
-    if (i === 0) el.append(h('img', { src: CART, alt: '', draggable: 'false', onerror: (e) => e.target.remove() }));
+    if (i === 0) el.append(h('img', { src: CART, alt: '', draggable: 'false' }));
+    else el.insertAdjacentHTML('beforeend', logSvg(c.len, c.d === 'v', i));
     el.addEventListener('pointerdown', (e) => startDrag(e, i));
     board.append(el);
     return el;
