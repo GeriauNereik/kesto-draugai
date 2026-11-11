@@ -3,6 +3,7 @@
 // Lygiai – src/config/brain/traffic.json (patikrinti sprendėju, „norma“ – mažiausias ėjimų skaičius).
 import { h } from '../../ui/dom.js';
 import { sfx } from '../../sfx.js';
+import { onDrag } from '../../ui/drag.js';
 import { TRAFFIC_LEVELS } from '../../config/brain-levels.js';
 import { brainShell, starsByMoves } from './base.js';
 
@@ -84,7 +85,6 @@ export function trafficGame(root, { level, onHome, onFinish }) {
     });
     if (i === 0) el.append(h('img', { src: CART, alt: '', draggable: 'false' }));
     else el.insertAdjacentHTML('beforeend', logSvg(c.len, c.d === 'v', i));
-    el.addEventListener('pointerdown', (e) => startDrag(e, i));
     board.append(el);
     return el;
   });
@@ -106,21 +106,69 @@ export function trafficGame(root, { level, onHome, onFinish }) {
       el.style.setProperty('--c', c.c);
       el.style.setProperty('--w', c.d === 'h' ? c.len : 1);
       el.style.setProperty('--h', c.d === 'v' ? c.len : 1);
-      el.style.transform = '';
     });
     shell.setMoves(moves);
     shell.setUndo(history.length > 0);
   }
 
   // ---------- tempimas ----------
-  function startDrag(e, i) {
-    if (shell.done) return;
-    e.preventDefault();
+  // Veikia ir senesniuose iPhone (žr. ui/drag.js). Paleidus rąstas sklandžiai „prilimpa“ prie artimiausio langelio
+  // nuo tos vietos, kur buvo paleistas (be šuolio atgal).
+  els.forEach((el, i) =>
+    onDrag(el, {
+      start(p) {
+        if (shell.done) return false;
+        const c = cars[i];
+        drag = { i, start: c.d === 'h' ? p.x : p.y, delta: 0, cell: board.getBoundingClientRect().width / N, ...range(i) };
+        el.classList.add('dragging');
+        el.style.transition = 'none';
+      },
+      move(p) {
+        if (!drag) return;
+        const c = cars[i];
+        const px = (c.d === 'h' ? p.x : p.y) - drag.start;
+        // už ribos – „spyruokliuoja“ (šiek tiek pajuda), kad būtų aišku, jog toliau negalima
+        const lo = drag.min * drag.cell;
+        const hi = drag.max * drag.cell;
+        drag.delta = px < lo ? lo + (px - lo) * 0.15 : px > hi ? hi + (px - hi) * 0.15 : px;
+        el.style.transform = c.d === 'h' ? `translateX(${drag.delta}px)` : `translateY(${drag.delta}px)`;
+      },
+      end() {
+        if (!drag) return;
+        const { delta, cell, min, max } = drag;
+        drag = null;
+        const c = cars[i];
+        el.classList.remove('dragging');
+        const steps = Math.max(min, Math.min(max, Math.round(delta / cell)));
+        if (steps) {
+          history.push(cars.map((x) => ({ ...x })));
+          if (c.d === 'h') c.c += steps;
+          else c.r += steps;
+          moves++;
+          sfx('knock', 1);
+        }
+        // sklandus prilipimas: nauja vieta + likęs poslinkis, kuris nuslenka iki 0
+        const rest = delta - steps * cell;
+        place();
+        el.style.transition = 'none';
+        el.style.transform = c.d === 'h' ? `translateX(${rest}px)` : `translateY(${rest}px)`;
+        void el.offsetWidth;
+        el.style.transition = '';
+        el.style.transform = '';
+        // vežimėlis prie angos – išvažiuoja
+        if (i === 0 && c.c + c.len === N) {
+          setTimeout(() => el.classList.add('leaving'), 140);
+          shell.win(starsByMoves(moves, L.par), el);
+        }
+      },
+    })
+  );
+  let drag = null;
+
+  /** Kiek langelių rąstas gali pajudėti atgal (min ≤ 0) ir pirmyn (max ≥ 0). */
+  function range(i) {
     const c = cars[i];
-    const el = els[i];
-    const cell = board.getBoundingClientRect().width / N;
     const g = occupied(i);
-    // kiek langelių galima pajudėti atgal ir pirmyn
     let min = 0;
     let max = 0;
     if (c.d === 'h') {
@@ -130,42 +178,7 @@ export function trafficGame(root, { level, onHome, onFinish }) {
       while (c.r + min - 1 >= 0 && !g[c.r + min - 1][c.c]) min--;
       while (c.r + c.len + max < N && !g[c.r + c.len + max][c.c]) max++;
     }
-    const start = c.d === 'h' ? e.clientX : e.clientY;
-    let delta = 0;
-    el.classList.add('dragging');
-    try {
-      el.setPointerCapture?.(e.pointerId); // kad tempimas nenutrūktų išvažiavus pirštu už rąsto
-    } catch {
-      /* rodyklė jau nebeaktyvi – tempiam ir be jos */
-    }
-    const move = (ev) => {
-      const px = (c.d === 'h' ? ev.clientX : ev.clientY) - start;
-      delta = Math.max(min * cell, Math.min(max * cell, px));
-      el.style.transform = c.d === 'h' ? `translateX(${delta}px)` : `translateY(${delta}px)`;
-    };
-    const up = () => {
-      el.removeEventListener('pointermove', move);
-      el.removeEventListener('pointerup', up);
-      el.removeEventListener('pointercancel', up);
-      el.classList.remove('dragging');
-      const steps = Math.round(delta / cell);
-      if (steps) {
-        history.push(cars.map((x) => ({ ...x })));
-        if (c.d === 'h') c.c += steps;
-        else c.r += steps;
-        moves++;
-        sfx('knock', 1);
-      }
-      place();
-      // vežimėlis prie angos – išvažiuoja
-      if (i === 0 && c.c + c.len === N) {
-        el.classList.add('leaving');
-        shell.win(starsByMoves(moves, L.par), el);
-      }
-    };
-    el.addEventListener('pointermove', move);
-    el.addEventListener('pointerup', up);
-    el.addEventListener('pointercancel', up);
+    return { min, max };
   }
 
   place();

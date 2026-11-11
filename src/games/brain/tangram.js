@@ -5,6 +5,7 @@
 // Figūros – src/config/tangram-shapes.js (patikrintos: nepersidengia, vientisos).
 import { h } from '../../ui/dom.js';
 import { sfx } from '../../sfx.js';
+import { onDrag } from '../../ui/drag.js';
 import { pulse } from '../../ui/motion.js';
 import { TANGRAM_LEVELS } from '../../config/brain-levels.js';
 import { brainShell, seeded } from './base.js';
@@ -110,7 +111,7 @@ export function tangramGame(root, { level, onHome, onFinish }) {
   );
   pieces.forEach((p) => {
     p.el = el('polygon', { class: 'tg-piece', fill: p.color });
-    p.el.addEventListener('pointerdown', (e) => startDrag(e, p));
+    onDrag(p.el, { start: (pt) => startDrag(pt, p), move: (pt) => dragMove(pt, p), end: () => dragEnd(p) });
     svg.append(p.el);
   });
   shell.board.append(h('div', { class: 'tg-wrap' }, svg));
@@ -138,51 +139,43 @@ export function tangramGame(root, { level, onHome, onFinish }) {
 
   const toSvg = (e) => {
     const pt = svg.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
+    pt.x = e.x;
+    pt.y = e.y;
     const r = pt.matrixTransform(svg.getScreenCTM().inverse());
     return [r.x, r.y];
   };
 
-  function startDrag(e, p) {
-    if (p.locked || shell.done) return;
-    e.preventDefault();
-    const start = toSvg(e);
-    const from = p.pos.slice();
-    let moved = false;
+  // tempimas (ui/drag.js – veikia ir senesniuose iPhone); bakstelėjimas be judesio – pasukti
+  let dr = null;
+  function startDrag(pt, p) {
+    if (p.locked || shell.done) return false;
+    dr = { start: toSvg(pt), from: p.pos.slice(), moved: false };
     svg.append(p.el); // tempiama detalė – viršuje
     p.el.classList.add('dragging');
-    try {
-      p.el.setPointerCapture?.(e.pointerId);
-    } catch {
-      /* be užfiksavimo */
-    }
-    const move = (ev) => {
-      const q = toSvg(ev);
-      if (Math.hypot(q[0] - start[0], q[1] - start[1]) > 0.15) moved = true;
-      p.pos = [from[0] + q[0] - start[0], from[1] + q[1] - start[1]];
-      draw(p);
-    };
-    const up = () => {
-      p.el.removeEventListener('pointermove', move);
-      p.el.removeEventListener('pointerup', up);
-      p.el.removeEventListener('pointercancel', up);
-      p.el.classList.remove('dragging');
-      if (!moved) {
-        // bakstelėjimas – pasukti
-        if (canRotate) {
-          p.pos = from;
-          p.rot = (p.rot + 1) % 4;
-          sfx('flip');
-          draw(p);
-        }
-        return;
+    return true;
+  }
+  function dragMove(pt, p) {
+    if (!dr) return;
+    const q = toSvg(pt);
+    if (Math.hypot(q[0] - dr.start[0], q[1] - dr.start[1]) > 0.15) dr.moved = true;
+    p.pos = [dr.from[0] + q[0] - dr.start[0], dr.from[1] + q[1] - dr.start[1]];
+    draw(p);
+  }
+  function dragEnd(p) {
+    if (!dr) return;
+    const { moved, from } = dr;
+    dr = null;
+    p.el.classList.remove('dragging');
+    if (!moved) {
+      p.pos = from;
+      if (canRotate) {
+        p.rot = (p.rot + 1) % 4;
+        sfx('flip');
       }
-      drop(p);
-    };
-    p.el.addEventListener('pointermove', move);
-    p.el.addEventListener('pointerup', up);
-    p.el.addEventListener('pointercancel', up);
+      draw(p);
+      return;
+    }
+    drop(p);
   }
 
   function drop(p) {

@@ -33,7 +33,7 @@ function pipeSvg(m) {
   for (const [, , bit] of DIRS) if (m & bit) arms.push(bit);
   const end = { 1: [50, 0], 2: [100, 50], 4: [50, 100], 8: [0, 50] };
   const d = arms.map((b) => `M50 50L${end[b][0]} ${end[b][1]}`).join('') || 'M50 50L50 50';
-  for (const [cls, w] of [['pipe-out', 44], ['pipe-in', 33], ['pipe-water', 19]]) {
+  for (const [cls, w] of [['pipe-out', 32], ['pipe-in', 23], ['pipe-water', 12]]) {
     const p = document.createElementNS(NS, 'path');
     p.setAttribute('d', d);
     p.setAttribute('class', cls);
@@ -41,7 +41,7 @@ function pipeSvg(m) {
     g.append(p);
   }
   // jungtis viduryje (ir aklina galas, jei viena atšaka)
-  for (const [cls, rr] of [['pipe-out', 23], ['pipe-in', 17.5], ['pipe-water', 10]]) {
+  for (const [cls, rr] of [['pipe-out', 17], ['pipe-in', 12.5], ['pipe-water', 6.5]]) {
     const c = document.createElementNS(NS, 'circle');
     c.setAttribute('cx', 50);
     c.setAttribute('cy', 50);
@@ -54,11 +54,11 @@ function pipeSvg(m) {
     const r = document.createElementNS(NS, 'rect');
     const [x, y] = end[b];
     const horiz = b === 2 || b === 8;
-    r.setAttribute('x', horiz ? (x === 0 ? 0 : 91) : 24);
-    r.setAttribute('y', horiz ? 24 : y === 0 ? 0 : 91);
-    r.setAttribute('width', horiz ? 9 : 52);
-    r.setAttribute('height', horiz ? 52 : 9);
-    r.setAttribute('rx', 3);
+    r.setAttribute('x', horiz ? (x === 0 ? 4 : 89) : 31);
+    r.setAttribute('y', horiz ? 31 : y === 0 ? 4 : 89);
+    r.setAttribute('width', horiz ? 7 : 38);
+    r.setAttribute('height', horiz ? 38 : 7);
+    r.setAttribute('rx', 3.5);
     r.setAttribute('class', 'pipe-collar');
     g.append(r);
   }
@@ -112,7 +112,7 @@ export function pipesGame(root, { level, onHome, onFinish }) {
     );
   }
   // ---------- vamzdžiai ----------
-  const grid = h('div', { class: 'pipe-grid', style: `--cols:${cols};--rows:${rows}` });
+  const grid = h('div', { class: 'pipe-grid', style: `--cols:${cols};--rows:${rows};--soil:url(${IMG}soil.webp)` });
   const cells = L.tiles.map((t, i) => {
     const valve = t.v !== undefined;
     const el = h('button', { type: 'button', class: `pipe-cell${valve ? ' valve' : ''}`, 'aria-label': valve ? 'Čiaupas' : 'Vamzdis' }, [pipeSvg(t.m)]);

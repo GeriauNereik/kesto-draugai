@@ -6,7 +6,7 @@ pridedama į pradžios ekraną ir veikia be interneto.
 Vedlė – **pelėda Ona** (kalba tuo pačiu moterišku balsu kaip visi įrašai).
 Žaidimai: **Raidės** (Ežys Domas), **Skaičiai** (Bebras Kęstas), **Poros** (Voverė Vėja),
 po kas antro žaidimo – judesio pertraukėlė su Stirniuku Tadu.
-Skiltis **Galvosūkiai** (pelėda Ona): Surūšiuok, Miško eismas, Spalvų sudoku, Tangramas (40 lygių),
+Skiltis **Žaidimai** – žaidimai ir galvosūkiai (pelėda Ona): Surūšiuok, Miško eismas, Miško sudoku, Tangramas (40 lygių),
 Paslėptas takas, Vandentiekis – po 20 lygių nuo lengvo iki sunkaus; kitas lygis atsirakina įveikus ankstesnį.
 
 ## Įdiegimas ir paleidimas

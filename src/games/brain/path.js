@@ -8,6 +8,9 @@ import { PATH_LEVELS } from '../../config/brain-levels.js';
 import { brainShell, starsByMistakes, seeded } from './base.js';
 
 const WALKER = `${import.meta.env.BASE_URL}assets/characters/portraits/domas.webp`;
+const IMG = `${import.meta.env.BASE_URL}assets/brain/path/`;
+const HOME = `${IMG}home.webp`;
+const NS = 'http://www.w3.org/2000/svg';
 
 /** Takas: nuo apatinės eilutės iki viršutinės, be grįžimų ir pasikartojimų, tiksliai len žingsnių. */
 function makePath({ cols, rows, len }, rnd) {
@@ -88,9 +91,20 @@ export function pathGame(root, { level, onHome, onFinish }) {
     }
   }
   const stoneAt = (r, c) => stones[r * L.cols + c];
+  // takelis (taškų linija) tarp jau parodytų / pereitų akmenukų
+  const trail = document.createElementNS(NS, 'svg');
+  trail.setAttribute('class', 'path-trail');
+  trail.setAttribute('viewBox', `0 0 ${L.cols} ${L.rows}`);
+  trail.setAttribute('preserveAspectRatio', 'none');
+  const line = document.createElementNS(NS, 'polyline');
+  line.setAttribute('vector-effect', 'non-scaling-stroke');
+  trail.append(line);
+  grid.prepend(trail);
+  const setTrail = (pts) => line.setAttribute('points', pts.map(([r, c]) => `${c + 0.5},${r + 0.5}`).join(' '));
   const walker = h('img', { class: 'path-walker', src: WALKER, alt: 'Ežiukas Domas', draggable: 'false' });
   grid.append(walker);
-  shell.board.append(h('div', { class: 'path-wrap' }, [h('div', { class: 'path-goal', 'aria-hidden': 'true', text: 'Tikslas' }), grid, shell.toolbar]));
+  const board = h('div', { class: 'path-board', style: `--cols:${L.cols};--rows:${L.rows};--map:url(${IMG}map.webp);--stone:url(${IMG}stone.webp)` }, [h('img', { class: 'path-home', src: HOME, alt: 'Domo namai – tikslas', draggable: 'false' }), grid]);
+  shell.board.append(h('div', { class: 'path-wrap' }, [board, shell.toolbar]));
 
   function putWalker(r, c) {
     walker.style.setProperty('--r', r);
@@ -104,6 +118,7 @@ export function pathGame(root, { level, onHome, onFinish }) {
     const [r0, c0] = path[0];
     stoneAt(r0, c0).classList.add('start', 'done');
     putWalker(r0, c0);
+    setTrail([path[0]]);
     shell.char.show('Žiūrėk, kur eina Domas!');
     await wait(700);
     for (let i = 1; i < path.length; i++) {
@@ -111,6 +126,7 @@ export function pathGame(root, { level, onHome, onFinish }) {
       const [r, c] = path[i];
       stoneAt(r, c).classList.add('lit');
       putWalker(r, c);
+      setTrail(path.slice(0, i + 1));
       sfx('knock', i % 5);
       await wait(L.stepMs);
     }
@@ -119,6 +135,7 @@ export function pathGame(root, { level, onHome, onFinish }) {
     // takas pasislepia, Domas grįžta į startą
     path.slice(1).forEach(([r, c]) => stoneAt(r, c).classList.remove('lit'));
     putWalker(r0, c0);
+    setTrail([path[0]]);
     grid.classList.remove('watch');
     showing = false;
     missesNow = 0;
@@ -131,6 +148,7 @@ export function pathGame(root, { level, onHome, onFinish }) {
     if (r === er && c === ec) {
       s.classList.add('done');
       putWalker(r, c);
+      setTrail(path.slice(0, step + 1));
       sfx('knock', step % 5);
       step++;
       if (step >= path.length) shell.win(starsByMistakes(mistakes), grid);

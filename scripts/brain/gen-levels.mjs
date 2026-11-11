@@ -250,7 +250,7 @@ function genTraffic() {
 }
 
 // =====================================================================
-// 3. Spalvų sudoku: kiekvienoje eilutėje, stulpelyje (ir blokelyje) – visi daiktai po kartą.
+// 3. Miško sudoku: kiekvienoje eilutėje, stulpelyje (ir blokelyje) – visi daiktai po kartą.
 // =====================================================================
 const SUDOKU_PARAMS = [
   // [dydis, blokelio aukštis, blokelio plotis (0 – be blokelių), tuščių langelių]
@@ -577,7 +577,7 @@ if (want('pipes')) {
   writeFileSync(new URL('pipes.json', OUT), JSON.stringify(genPipes()));
 }
 if (want('sudoku')) {
-  console.log('Spalvų sudoku…');
+  console.log('Miško sudoku…');
   writeFileSync(new URL('sudoku.json', OUT), JSON.stringify(genSudoku()));
 }
 console.log('Baigta.');

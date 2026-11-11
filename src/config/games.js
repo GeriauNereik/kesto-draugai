@@ -41,9 +41,32 @@ export const CLOUDS_PER_LEVEL = 10;
 export const CLOUD_LIVES = 3;
 
 // Poros: kiek porų kiekviename lygyje.
-export const MEMORY_PAIRS = [3, 4, 5, 6, 8, 10];
-/** Laikas visam porų žaidimui (s): 3 poros – 45 s, 10 porų – 115 s. */
+// Surask poras: 26 lygiai. pairs – porų skaičius, secs – laikas, peek – kiek sekundžių pradžioje rodomos visos
+// kortelės (įsiminti), swap – po kiekvienos klaidos dvi uždaros kortelės susikeičia vietomis.
 export const memorySeconds = (pairs) => 15 + pairs * 10;
+export const MEMORY_LEVELS = [
+  ...[3, 4, 5, 6, 8, 10].map((pairs) => ({ pairs, secs: memorySeconds(pairs) })),
+  { pairs: 6, secs: 55, peek: 3 },
+  { pairs: 8, secs: 80 },
+  { pairs: 8, secs: 70, peek: 3 },
+  { pairs: 10, secs: 100 },
+  { pairs: 10, secs: 90 },
+  { pairs: 12, secs: 120, peek: 4 },
+  { pairs: 12, secs: 110 },
+  { pairs: 8, secs: 70, swap: true },
+  { pairs: 10, secs: 100, swap: true },
+  { pairs: 12, secs: 115 },
+  { pairs: 12, secs: 115, swap: true },
+  { pairs: 10, secs: 80 },
+  { pairs: 12, secs: 110, peek: 2, swap: true },
+  { pairs: 12, secs: 100 },
+  { pairs: 14, secs: 140 },
+  { pairs: 14, secs: 135, swap: true },
+  { pairs: 14, secs: 125 },
+  { pairs: 15, secs: 145 },
+  { pairs: 15, secs: 140, swap: true },
+  { pairs: 15, secs: 130, swap: true },
+];
 
 // Kryžiukai-nuliukai: kaip protingai žaidžia Vėja; lygyje – TTT_GAMES partijos.
 export const TTT_GAMES = 3;
@@ -84,13 +107,14 @@ export const GRADE2_TOPICS = [
 ];
 
 export const MATH_GAMES = [
-  { id: 'counting', char: 'kestas', title: 'Skaičiuok', icon: 'logs', levels: easyHard(['1–5'], ['1–10'], true) },
-  { id: 'math', char: 'kestas', title: 'Sudėk ir atimk', icon: 'plusminus', levels: easyHard(['2+1', '3−1'], ['6+3', '9−4'], true) },
+  { id: 'counting', char: 'kestas', title: 'Skaičiuok', icon: 'logs', img: 'cards/counting.webp', levels: easyHard(['1–5'], ['1–10'], true) },
+  { id: 'math', char: 'kestas', title: 'Sudėk ir atimk', icon: 'plusminus', img: 'cards/math.webp', levels: easyHard(['2+1', '3−1'], ['6+3', '9−4'], true) },
   {
     id: 'clouds',
     char: 'kestas',
     title: 'Debesėliai',
     icon: 'cloud',
+    img: 'cards/clouds.webp',
     progressive: true, // kitas lygis atsirakina tik perėjus ankstesnį
     // Mygtuke: veiksmai, skaičių riba ir „»“, jei debesėliai kyla greičiau nei ankstesniame tokiame lygyje.
     levels: CLOUD_LEVELS.map((l, i) => {
@@ -99,7 +123,7 @@ export const MATH_GAMES = [
       return { label: `${i + 1}`, tiles: [l.ops.join(' '), `iki ${l.max}${faster ? ' »' : ''}`] };
     }),
   },
-  { id: 'clock', char: 'kestas', title: 'Laikrodis', icon: 'clock', levels: CLOCK_LEVELS.map(({ label, tiles }) => ({ label, tiles })) },
+  { id: 'clock', char: 'kestas', title: 'Laikrodis', icon: 'clock', img: 'cards/clock.webp', levels: CLOCK_LEVELS.map(({ label, tiles }) => ({ label, tiles })) },
 ];
 
 const MATH_HUB = { id: 'mathhub', char: 'kestas', title: 'Matematika', greet: 'kestas_hub', hub: MATH_GAMES };
@@ -111,13 +135,19 @@ export const PLAY_GAMES = [
     char: 'veja',
     title: 'Surask poras',
     icon: 'cards',
-    levels: MEMORY_PAIRS.map((n, i) => ({ label: `${i + 1}`, tiles: [`${n} ${n % 10 === 0 || (n % 100 > 10 && n % 100 < 20) ? 'porų' : n % 10 === 1 ? 'pora' : 'poros'}`, `${memorySeconds(n)} s`] })),
+    img: 'cards/memory.webp',
+    progressive: true,
+    levels: MEMORY_LEVELS.map(({ pairs: n, secs, swap }, i) => ({
+      label: `${i + 1}`,
+      tiles: [`${n} ${n % 10 === 0 || (n % 100 > 10 && n % 100 < 20) ? 'porų' : n % 10 === 1 ? 'pora' : 'poros'}`, `${secs} s`, ...(swap ? ['maišosi'] : [])],
+    })),
   },
   {
     id: 'draw',
     char: 'veja',
     title: 'Piešimas',
     icon: 'brush',
+    img: 'cards/draw.webp',
     // Lygiai – kategorijos; mygtuke rodoma, kiek jau nupiešta (skaičiuojama atidarant ekraną).
     levels: [...DRAW_CATEGORIES, { id: 'viskas', label: 'Viskas', items: ALL_DRAW_ITEMS }].map((c) => ({
       label: c.label,
@@ -129,6 +159,7 @@ export const PLAY_GAMES = [
     char: 'veja',
     title: 'Miško bėgimas',
     icon: 'run',
+    img: 'cards/runner.webp',
     // Be lygių ekrano: veikėjas renkamas pačiame žaidime (žr. src/games/runner.js).
     direct: true,
     levels: [{ label: 'Bėgti' }],
@@ -138,6 +169,7 @@ export const PLAY_GAMES = [
     char: 'veja',
     title: 'Kryžiukai-nuliukai',
     icon: 'tictactoe',
+    img: 'cards/tictactoe.webp',
     progressive: true,
     levels: TTT_LEVELS.map(({ label }, i) => ({ label, tiles: ['✕', '○', `${i + 1}`] })),
   },
@@ -148,7 +180,7 @@ const brainLevels = (id) => BRAIN_TILES[id].map((tiles, i) => ({ label: `${i + 1
 export const BRAIN_GAMES = [
   { id: 'sort', char: 'ona', title: 'Surūšiuok', icon: 'cards', img: 'brain/sort.webp', progressive: true, levels: brainLevels('sort') },
   { id: 'traffic', char: 'ona', title: 'Miško eismas', icon: 'logs', img: 'brain/traffic.webp', progressive: true, levels: brainLevels('traffic') },
-  { id: 'sudoku', char: 'ona', title: 'Spalvų sudoku', icon: 'cards', img: 'brain/sudoku.webp', progressive: true, levels: brainLevels('sudoku') },
+  { id: 'sudoku', char: 'ona', title: 'Miško sudoku', icon: 'cards', img: 'brain/sudoku.webp', progressive: true, levels: brainLevels('sudoku') },
   { id: 'tangram', char: 'ona', title: 'Tangramas', icon: 'cards', img: 'brain/tangram.webp', progressive: true, levels: brainLevels('tangram') },
   { id: 'path', char: 'ona', title: 'Paslėptas takas', icon: 'run', img: 'brain/path.webp', progressive: true, levels: brainLevels('path') },
   { id: 'pipes', char: 'ona', title: 'Vandentiekis', icon: 'cards', img: 'brain/pipes.webp', progressive: true, levels: brainLevels('pipes') },
@@ -162,7 +194,7 @@ export const GAMES = [
   { id: 'letters', char: 'domas', title: 'Raidės', levels: easyHard(['A', 'M', 'S'], ['E', 'Ę', 'Ė', 'I']) },
   MATH_HUB,
   PLAY_HUB,
-  { id: 'grade2', char: 'gedas', cardIcon: 'skull', title: 'Antrokams', levels: GRADE2_TOPICS.map(({ label, tiles }) => ({ label, tiles })) },
+  { id: 'grade2', char: 'gedas', cardIcon: 'skull', cardImg: 'cards/grade2.webp', title: 'Antrokams', levels: GRADE2_TOPICS.map(({ label, tiles }) => ({ label, tiles })) },
 ];
 
 /** Visi tikri žaidimai (be skilčių) – tėvų lentelei ir pan. */

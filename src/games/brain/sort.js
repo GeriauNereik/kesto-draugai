@@ -9,6 +9,7 @@
 import { h, wait } from '../../ui/dom.js';
 import { pulse } from '../../ui/motion.js';
 import { sfx } from '../../sfx.js';
+import { onDrag } from '../../ui/drag.js';
 import { burst } from '../../ui/fx.js';
 import { SORT_LEVELS } from '../../config/brain-levels.js';
 import { brainShell, starsByMoves, ITEMS, ITEM_BASE } from './base.js';
@@ -64,7 +65,11 @@ export function sortGame(root, { level, onHome, onFinish }) {
   const row = h('div', { class: 'sort-row', style: `--cap:${cap};--rows:${rows};--per:${per}` });
   const tubeEls = tubes.map((_, i) => {
     const el = h('button', { type: 'button', class: 'sort-tube', 'aria-label': `Stiklainis ${i + 1}` });
-    el.addEventListener('pointerdown', (e) => press(e, i));
+    onDrag(el, {
+      start: (p) => press(p, i),
+      move: (p) => dragMove(p, i),
+      end: (p) => dragEnd(p, i),
+    });
     return el;
   });
   row.append(...tubeEls);
@@ -141,73 +146,68 @@ export function sortGame(root, { level, onHome, onFinish }) {
     }
   }
 
-  // ---------- bakstelėjimas ir tempimas ----------
-  function press(e, i) {
-    if (shell.done) return;
+  // ---------- bakstelėjimas ir tempimas (ui/drag.js – veikia ir senesniuose iPhone) ----------
+  let ghost = null;
+  let downAt = null;
+  /** Paspaudimas: grąžina false, jei tempimo nebus (pvz. daiktas padėtas ar nieko nepakelta). */
+  function press(p, i) {
+    if (shell.done) return false;
     stopDemo();
-    if (!touched && level <= DEMO_UNTIL) touched = true;
-    e.preventDefault();
-    const sx = e.clientX;
-    const sy = e.clientY;
-    let ghost = null;
-
+    if (level <= DEMO_UNTIL) touched = true;
     // kitame stiklainyje jau pakeltas daiktas – šis paspaudimas reiškia „dėk čia“
     if (held !== null && held !== i) {
       const from = held;
       if (canDrop(from, i)) move(from, i);
       else refuse(from, i);
-      return;
+      return false;
     }
     if (held === i) {
       held = null;
       render();
-      return;
+      return false;
     }
     if (!tubes[i].length) {
       shell.char.show('Pirmiau bakstelėk stiklainį su daiktais.');
-      return;
+      return false;
     }
     if (isFull(tubes[i])) {
       shell.char.show('Šis stiklainis jau surinktas!');
-      return;
+      return false;
     }
     held = i;
     sfx('tap');
     render();
     if (level <= DEMO_UNTIL && moves === 0) shell.char.show('Dabar bakstelėk žalią stiklainį!');
-
-    const onMove = (ev) => {
-      if (!ghost && Math.hypot(ev.clientX - sx, ev.clientY - sy) < DRAG_PX) return;
-      if (!ghost) {
-        const srcEl = tubeEls[i].querySelector('.sort-item.lifted');
-        if (!srcEl) return;
-        const r = srcEl.getBoundingClientRect();
-        ghost = h('img', { class: 'sort-ghost', src: srcEl.src, alt: '', style: `width:${r.width}px;height:${r.height}px` });
-        document.body.append(ghost);
-        srcEl.style.visibility = 'hidden';
-      }
-      ghost.style.transform = `translate(${ev.clientX}px, ${ev.clientY}px) translate(-50%, -60%)`;
-      const over = tubeAt(ev.clientX, ev.clientY);
-      tubeEls.forEach((t, j) => t.classList.toggle('over', j === over && canDrop(i, j)));
-    };
-    const onUp = (ev) => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
-      tubeEls.forEach((t) => t.classList.remove('over'));
-      if (!ghost) return; // buvo bakstelėjimas – daiktas lieka pakeltas
-      ghost.remove();
-      const to = tubeAt(ev.clientX, ev.clientY);
-      if (to !== -1 && canDrop(i, to)) move(i, to);
-      else {
-        held = null;
-        render();
-        if (to !== -1 && to !== i) refuse(i, to);
-      }
-    };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onUp);
+    downAt = p;
+    ghost = null;
+    return true;
+  }
+  function dragMove(p, i) {
+    if (!ghost && Math.hypot(p.x - downAt.x, p.y - downAt.y) < DRAG_PX) return;
+    if (!ghost) {
+      const srcEl = tubeEls[i].querySelector('.sort-item.lifted');
+      if (!srcEl) return;
+      const r = srcEl.getBoundingClientRect();
+      ghost = h('img', { class: 'sort-ghost', src: srcEl.src, alt: '', style: `width:${r.width}px;height:${r.height}px` });
+      document.body.append(ghost);
+      srcEl.style.visibility = 'hidden';
+    }
+    ghost.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -60%)`;
+    const over = tubeAt(p.x, p.y);
+    tubeEls.forEach((t, j) => t.classList.toggle('over', j === over && canDrop(i, j)));
+  }
+  function dragEnd(p, i) {
+    tubeEls.forEach((t) => t.classList.remove('over'));
+    if (!ghost) return; // buvo bakstelėjimas – daiktas lieka pakeltas
+    ghost.remove();
+    ghost = null;
+    const to = tubeAt(p.x, p.y);
+    if (to !== -1 && canDrop(i, to)) move(i, to);
+    else {
+      held = null;
+      render();
+      if (to !== -1 && to !== i) refuse(i, to);
+    }
   }
 
   function tubeAt(x, y) {

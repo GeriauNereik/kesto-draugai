@@ -49,6 +49,7 @@ export function menuScreen(root, { onPick, onParents, onSwitch, firstTime = fals
       h('button', { type: 'button', class: 'game-card', 'aria-label': g.cardIcon ? g.title : `${CHARACTERS[g.char].short}: ${g.title}` }, [
         (() => {
           // Kortelėje – veikėjas arba (jei nurodyta) piešta ikona, pvz. Antrokams – pirato kaukolė.
+          if (g.cardImg) return h('div', { class: 'card-img hub-pic' }, h('img', { src: `${import.meta.env.BASE_URL}assets/${g.cardImg}`, alt: '', draggable: 'false', decoding: 'async' }));
           if (g.cardIcon) return h('div', { class: 'card-img card-icon', html: ICONS[g.cardIcon] });
           const box = h('div', { class: 'card-img' });
           rigs[gi] = createCharacter(box, g.char, { state: 'idle' });
