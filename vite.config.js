@@ -168,8 +168,21 @@ function appVersion() {
   return `${d} · ${sha}`;
 }
 
+const APP_VERSION = appVersion();
+
+// version.json – naujausios versijos žymė serveryje (tėvų skilties mygtukas „Patikrinti atnaujinimą“
+// ją palygina su veikiančia). Ne talpykloje (workbox globPatterns jos neapima).
+function versionFile() {
+  return {
+    name: 'version-file',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ version: APP_VERSION }) });
+    },
+  };
+}
+
 export default defineConfig({
-  define: { __APP_VERSION__: JSON.stringify(appVersion()) },
+  define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   // Be PWA įskiepio virtual:pwa-register neegzistuoja – pakeičiam tuščiu.
   resolve: process.env.NO_PWA ? { alias: [{ find: /^virtual:pwa-register$/, replacement: '/src/pwa-stub.js' }] } : {},
   // GitHub Pages: BASE=/repo-vardas/ npm run build
@@ -179,6 +192,7 @@ export default defineConfig({
   css: { transformer: 'lightningcss', lightningcss: { targets: CSS_TARGETS } },
   server: { host: true },
   plugins: [
+    versionFile(),
     audioManifest(),
     rigManifest(),
     // NO_PWA=1 – be service worker'io (pvz. Claude artefaktui, kur jis neveikia)

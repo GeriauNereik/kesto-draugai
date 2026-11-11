@@ -8,6 +8,7 @@ import { charPortrait } from '../config/characters.js';
 import { ICONS } from '../ui/icons.js';
 import { vocative, tidyName } from '../names.js';
 import { setMuted, voiceStatus } from '../audio.js';
+import { forceUpdate } from '../pwa.js';
 
 /** 1 failas, 2 failai, 10 failų… */
 function plural(n, one, few, many) {
@@ -250,6 +251,29 @@ export function parentsScreen(root, { onHome, onCurrentDeleted }) {
         text: 'Balsas: Regina Jokubauskaitė, LIEPA projekto įrašai (Vilniaus universitetas, CC BY 4.0), sintezė – modelis krapas-Regina (Kristijonas, CC BY-NC 4.0), kirčiavimas – banano-kirtis-v2. Tik nekomerciniam naudojimui.',
       }),
       h('p', { class: 'p-note', text: `Versija: ${__APP_VERSION__}` }),
+      updateRow(),
     ]);
+  }
+
+  /** „Patikrinti atnaujinimą“: jei telefone liko sena versija – parsisiunčia naujausią (progresas lieka). */
+  function updateRow() {
+    const status = h('p', { class: 'p-note p-update-status', 'aria-live': 'polite' });
+    let busy = false;
+    const btn = button({
+      label: 'Patikrinti atnaujinimą',
+      icon: 'restart',
+      variant: 'secondary',
+      onClick: async () => {
+        if (busy) return;
+        busy = true;
+        btn.disabled = true;
+        const res = await forceUpdate((t) => (status.textContent = t));
+        if (res !== 'updating') {
+          busy = false;
+          btn.disabled = false;
+        }
+      },
+    });
+    return h('div', { class: 'p-update' }, [btn, status]);
   }
 }

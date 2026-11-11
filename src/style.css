@@ -3872,3 +3872,8 @@ input {
   .pipe-wrap { flex-direction: row; gap: 18px; --cell: min(70px, calc((100cqh - 8px) / (var(--rows) + 2.3)), calc((100cqw - 110px) / var(--cols))); }
   .pipe-wrap .brain-toolbar { flex-direction: column; }
 }
+
+/* Tėvų skiltis: „Patikrinti atnaujinimą“ */
+.p-update { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 4px; }
+.p-update .p-update-status { margin: 0; flex: 1 1 160px; font-weight: 700; color: var(--sage-dark); }
+.p-update-status:empty { display: none; }
