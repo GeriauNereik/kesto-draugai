@@ -142,8 +142,6 @@ export const PLAY_GAMES = [
     levels: TTT_LEVELS.map(({ label }, i) => ({ label, tiles: ['✕', '○', `${i + 1}`] })),
   },
 ];
-const PLAY_HUB = { id: 'playhub', char: 'veja', title: 'Žaidimai', greet: 'ka_zaisime', hub: PLAY_GAMES };
-PLAY_GAMES.forEach((g) => (g.parent = PLAY_HUB));
 
 // Galvosūkiai: po 20 lygių (tangramas – 40), kiekvienas kitas atsirakina perėjus ankstesnį. Lygių duomenys – brain-levels.js.
 const brainLevels = (id) => BRAIN_TILES[id].map((tiles, i) => ({ label: `${i + 1}`, tiles }));
@@ -155,15 +153,15 @@ export const BRAIN_GAMES = [
   { id: 'path', char: 'ona', title: 'Paslėptas takas', icon: 'run', img: 'brain/path.webp', progressive: true, levels: brainLevels('path') },
   { id: 'pipes', char: 'ona', title: 'Vandentiekis', icon: 'cards', img: 'brain/pipes.webp', progressive: true, levels: brainLevels('pipes') },
 ];
-const BRAIN_HUB = { id: 'brainhub', char: 'ona', title: 'Galvosūkiai', greet: 'galvosukiai', hub: BRAIN_GAMES };
-BRAIN_GAMES.forEach((g) => (g.parent = BRAIN_HUB));
+// Žaidimai ir galvosūkiai – vienoje skiltyje (pirma žaidimai, po jų galvosūkiai).
+const PLAY_HUB = { id: 'playhub', char: 'veja', title: 'Žaidimai', greet: 'ka_zaisime', hub: [...PLAY_GAMES, ...BRAIN_GAMES] };
+PLAY_HUB.hub.forEach((g) => (g.parent = PLAY_HUB));
 
 // Meniu kortelės.
 export const GAMES = [
   { id: 'letters', char: 'domas', title: 'Raidės', levels: easyHard(['A', 'M', 'S'], ['E', 'Ę', 'Ė', 'I']) },
   MATH_HUB,
   PLAY_HUB,
-  BRAIN_HUB,
   { id: 'grade2', char: 'gedas', cardIcon: 'skull', title: 'Antrokams', levels: GRADE2_TOPICS.map(({ label, tiles }) => ({ label, tiles })) },
 ];
 

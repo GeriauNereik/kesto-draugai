@@ -216,6 +216,7 @@ export function pipesGame(root, { level, onHome, onFinish }) {
     if (good > prevGood) sfx('correct');
     if (bad.length) {
       const [t, el] = bad[0];
+      sfx('wrong');
       pulse(el, 'shake');
       const got = Object.keys(MIX).find((x) => MIX[x] === el.style.getPropertyValue('--got'));
       shell.char.show(got && got.length > t.need.length ? 'Spalvos susimaišė! Užsuk čiaupą arba pasuk vamzdį kitaip.' : `Šiam kubilui reikia ${NAME[t.need]} spalvos!`);

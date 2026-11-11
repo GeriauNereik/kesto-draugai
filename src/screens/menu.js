@@ -86,7 +86,7 @@ export function menuScreen(root, { onPick, onParents, onSwitch, firstTime = fals
       ]),
       h('div', { class: 'menu-body' }, [
         h('div', { class: 'menu-host' }, host.el),
-        stagger(h('div', { class: 'menu-cards' }, cards), 90, 100, 'rise'),
+        stagger(h('div', { class: 'menu-cards' }, cards), 60, 60, 'fade'),
       ]),
     ])
   );

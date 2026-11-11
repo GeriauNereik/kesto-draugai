@@ -25,8 +25,19 @@ const SOUNDS = {
     tone(c, { freq: 659, dur: 0.16, type: 'triangle', vol: 0.12 });
     tone(c, { freq: 988, start: 0.1, dur: 0.28, type: 'triangle', vol: 0.12 });
   },
-  // Žemas minkštas "bum" (ne bauginantis)
-  wrong: (c) => tone(c, { freq: 260, to: 190, dur: 0.22, type: 'sine', vol: 0.1 }),
+  // Aiškus, bet negąsdinantis „oi-oi“: dvi krentančios natos
+  wrong: (c) => {
+    tone(c, { freq: 466, to: 440, dur: 0.15, type: 'triangle', vol: 0.17 });
+    tone(c, { freq: 466, to: 440, dur: 0.13, type: 'square', vol: 0.025 });
+    tone(c, { freq: 349, to: 247, start: 0.16, dur: 0.32, type: 'triangle', vol: 0.17 });
+    tone(c, { freq: 349, to: 247, start: 0.16, dur: 0.3, type: 'square', vol: 0.025 });
+  },
+  // „Šeši–septyni“ pelėdos šokio taktas: žemesnė ir aukštesnė nata (step 0/1)
+  doot: (c, step = 0) => {
+    const f = step % 2 ? 784 : 587;
+    tone(c, { freq: f, dur: 0.12, type: 'square', vol: 0.04 });
+    tone(c, { freq: f / 2, dur: 0.14, type: 'triangle', vol: 0.12 });
+  },
   // Kortelės apvertimas
   flip: (c) => tone(c, { freq: 340, to: 620, dur: 0.1, type: 'triangle', vol: 0.06 }),
   // Žvaigždutė (aukštesnė kiekvieną kartą: step 0,1,2)
@@ -59,7 +70,21 @@ const SOUNDS = {
   },
 };
 
+// Kas klausosi efektų (pvz. pelėdos „6–7“ po kelių klaidų iš eilės) – veikia ir išjungus garsą.
+const listeners = new Set();
+export function onSfx(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
 export function sfx(name, arg) {
+  listeners.forEach((fn) => {
+    try {
+      fn(name);
+    } catch {
+      /* klausytojo klaida neturi sugadinti garso */
+    }
+  });
   const ctx = audioContext();
   if (!ctx || ctx.state !== 'running') return;
   try {

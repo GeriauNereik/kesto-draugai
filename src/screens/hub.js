@@ -35,7 +35,7 @@ export function hubScreen(root, { hub, onPick, onHome }) {
   root.append(
     h('section', { class: 'screen menu hub' }, [
       h('header', { class: 'topbar' }, [iconButton({ icon: 'home', ariaLabel: 'Į meniu', onClick: onHome })]),
-      h('div', { class: 'menu-body' }, [h('div', { class: 'menu-host' }, host.el), stagger(h('div', { class: `menu-cards${cards.length > 4 ? ' many' : ''}` }, cards), 80, 100, 'rise')]),
+      h('div', { class: 'menu-body' }, [h('div', { class: 'menu-host' }, host.el), stagger(h('div', { class: `menu-cards${cards.length > 4 ? ' many' : ''}` }, cards), 50, 60, 'fade')]),
     ])
   );
   host.speak(`phrases/${hub.greet}`);

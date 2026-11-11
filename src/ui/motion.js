@@ -50,6 +50,8 @@ export function pulse(el, name) {
 const ENTER = {
   // Atsiranda kildamas iš apačios
   rise: { y: 28, autoAlpha: 0, ease: 'power3.out', duration: 0.5 },
+  // Tik išryškėja vietoje (meniu kortelės – nejuda, kad niekas „nešokinėtų“)
+  fade: { autoAlpha: 0, ease: 'power1.out', duration: 0.35 },
   // UI plytelės (raidės, skaičiai): iššoka. Raidės – ne iliustracijos, joms mastelis tinka.
   pop: { y: 20, scale: 0.85, autoAlpha: 0, ease: 'back.out(1.8)', duration: 0.45 },
   // Rąsteliai atrieda iš kairės
@@ -128,7 +130,7 @@ export function appear(el, delay = 0) {
 /** Naujas ekranas įslysta. */
 export function screenIn(el) {
   if (!el || reduced()) return;
-  gsap.from(el, { autoAlpha: 0, y: 12, duration: 0.35, ease: 'power2.out', clearProps: 'transform,opacity,visibility' });
+  gsap.from(el, { autoAlpha: 0, duration: 0.3, ease: 'power1.out', clearProps: 'opacity,visibility' });
 }
 
 /** Sustabdo visas animacijas ekrano viduje (prieš jį išmetant). */

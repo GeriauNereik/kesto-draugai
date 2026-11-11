@@ -48,6 +48,7 @@ import { tangramGame } from './games/brain/tangram.js';
 import { pathGame } from './games/brain/path.js';
 import { pipesGame } from './games/brain/pipes.js';
 import { hubScreen } from './screens/hub.js';
+import { setupOops67 } from './ui/oops67.js';
 
 const GAME_MODULES = {
   letters: lettersGame,
@@ -228,6 +229,7 @@ screens.start();
 
 // Atnaujinimai (įdiegtoje programėlėje): žr. src/pwa.js
 setupPwa({ canReload: () => !Object.values(GAME_MODULES).includes(showing) });
+setupOops67();
 // Statistika admin panelei ir užraktas su kodu: žr. src/sync/
 startActivity();
 // Uždėjus užraktą žaidimo metu – žaidimas sustabdomas (grįžtam į meniu, virš jo – užrakto ekranas).
