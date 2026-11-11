@@ -177,22 +177,41 @@ export async function composeDrawing(src, banner) {
 
 const toBlob = (canvas) => new Promise((r) => canvas.toBlob(r, 'image/png'));
 
-/** Išsaugo paveikslėlį: bendrinimo langas (telefone) arba atsisiuntimas. Grąžina 'shared' | 'downloaded' | 'cancel'. */
+// iOS / iPadOS (įskaitant iPad, kuris prisistato kaip „Mac“ su lietimu)
+const isIOS = () => /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = () => window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
+
+/**
+ * Išsaugo paveikslėlį.
+ * Grąžina 'shared' | 'downloaded' | 'cancel' | 'manual' (reikia paspausti ir palaikyti peržiūrą).
+ * Svarbu: iOS bendrinimo langą leidžia atidaryti tik iškart po paspaudimo, todėl prieš navigator.share negali būti jokio laukimo.
+ * Nesėkmės atveju iOS NEnaudojam <a download> – programėlėje (pridėtoje prie pradžios ekrano) tai atidaro naršyklę su svetaine.
+ */
 export async function saveImage(blob, filename) {
   const file = new File([blob], filename, { type: 'image/png' });
-  if (navigator.canShare?.({ files: [file] })) {
+  let canShare = false;
+  try {
+    canShare = !!navigator.canShare?.({ files: [file] });
+  } catch {
+    canShare = false;
+  }
+  if (canShare) {
     try {
-      await navigator.share({ files: [file], title: 'Piešinys' });
+      await navigator.share({ files: [file] });
       return 'shared';
     } catch (e) {
       if (e?.name === 'AbortError') return 'cancel';
-      // kitos klaidos – bandom atsisiųsti
+      // NotAllowedError / InvalidStateError ir pan.
+      if (isIOS() || isStandalone()) return 'manual';
     }
+  } else if (isIOS()) {
+    return 'manual';
   }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  a.rel = 'noopener';
   document.body.append(a);
   a.click();
   a.remove();
@@ -202,12 +221,14 @@ export async function saveImage(blob, filename) {
 
 /**
  * Išsaugojimo langas su peržiūra.
+ * Būsenos: preparing (ruošiamas paveikslėlis) → ready → saving → done | error (galima bandyti dar kartą).
  * canvas – piešimo drobė; defaultText – pradinis juostelės tekstas; filename – failo vardas.
  */
 export function openSaveSheet({ canvas, defaultText = '', filename = 'piesinys.png', onClose }) {
   let style = 'miskas';
   let withBanner = true;
-  let busy = false;
+  let state = 'preparing';
+  let closed = false;
 
   const preview = h('img', { class: 'save-preview', alt: 'Piešinio peržiūra' });
   const input = h('input', {
@@ -231,7 +252,8 @@ export function openSaveSheet({ canvas, defaultText = '', filename = 'piesinys.p
     return b;
   });
   const bannerOpts = h('div', { class: 'save-banner-opts' }, [input, h('div', { class: 'save-styles' }, styleBtns)]);
-  const saveBtn = h('button', { type: 'button', class: 'btn btn-primary btn-xl save-go' }, [h('span', { class: 'btn-icon', html: ICONS.download || ICONS.check }), h('span', { class: 'btn-label', text: 'Išsaugoti' })]);
+  const saveLabel = h('span', { class: 'btn-label', text: 'Išsaugoti' });
+  const saveBtn = h('button', { type: 'button', class: 'btn btn-primary btn-xl save-go' }, [h('span', { class: 'btn-icon', html: ICONS.download || ICONS.check }), saveLabel]);
   const cancelBtn = h('button', { type: 'button', class: 'btn btn-secondary save-cancel', text: 'Atšaukti' });
   const note = h('p', { class: 'save-note', 'aria-live': 'polite' });
 
@@ -246,20 +268,37 @@ export function openSaveSheet({ canvas, defaultText = '', filename = 'piesinys.p
   const sheet = h('div', { class: 'save-sheet' }, card);
   document.body.append(sheet);
 
+  const LABELS = { preparing: 'Ruošiama…', ready: 'Išsaugoti', saving: 'Saugoma…', done: 'Išsaugota!', error: 'Bandyti dar kartą' };
+  function setState(s, msg = '') {
+    state = s;
+    card.dataset.state = s;
+    saveLabel.textContent = LABELS[s];
+    saveBtn.disabled = s === 'preparing' || s === 'saving' || s === 'done';
+    note.textContent = msg;
+    note.classList.toggle('err', s === 'error');
+  }
+
   let previewUrl = null;
   let renderToken = 0;
-  let ready = null; // { token, blob } – paruoštas paveikslėlis, kad išsaugojimas prasidėtų iškart po paspaudimo
+  let blob = null; // paruoštas paveikslėlis – išsaugojimas prasideda iškart po paspaudimo
   async function render() {
     const my = ++renderToken;
-    const out = await composeDrawing(canvas, withBanner ? { style, text: input.value } : null);
-    if (my !== renderToken) return null;
-    const blob = await toBlob(out);
-    if (my !== renderToken || !blob) return null;
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    previewUrl = URL.createObjectURL(blob);
-    preview.src = previewUrl;
-    ready = { token: my, blob };
-    return blob;
+    blob = null;
+    if (state !== 'saving' && state !== 'done') setState('preparing');
+    try {
+      const out = await composeDrawing(canvas, withBanner ? { style, text: input.value } : null);
+      if (my !== renderToken || closed) return;
+      const b = await toBlob(out);
+      if (my !== renderToken || closed) return;
+      if (!b) throw new Error('toBlob');
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = URL.createObjectURL(b);
+      preview.src = previewUrl;
+      blob = b;
+      if (state === 'preparing') setState('ready');
+    } catch {
+      if (my === renderToken && !closed) setState('error', 'Nepavyko paruošti paveikslėlio. Bandyk dar kartą.');
+    }
   }
   function sync() {
     sw.setAttribute('aria-checked', String(withBanner));
@@ -270,6 +309,8 @@ export function openSaveSheet({ canvas, defaultText = '', filename = 'piesinys.p
   let t = null;
   input.addEventListener('input', () => {
     clearTimeout(t);
+    blob = null;
+    setState('preparing');
     t = setTimeout(render, 150);
   });
   input.addEventListener('keydown', (e) => e.key === 'Enter' && input.blur());
@@ -280,6 +321,8 @@ export function openSaveSheet({ canvas, defaultText = '', filename = 'piesinys.p
   });
 
   function close() {
+    if (closed) return;
+    closed = true;
     clearTimeout(t);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     sheet.remove();
@@ -287,28 +330,29 @@ export function openSaveSheet({ canvas, defaultText = '', filename = 'piesinys.p
   }
   onTap(cancelBtn, () => (sfx('tap'), close()));
   sheet.addEventListener('click', (e) => e.target === sheet && close());
-  onTap(saveBtn, async () => {
-    if (busy) return;
-    busy = true;
-    saveBtn.disabled = true;
-    note.textContent = '';
-    try {
-      // iOS bendrinimo langą leidžia atidaryti tik iškart po paspaudimo – naudojam jau paruoštą paveikslėlį.
-      const blob = ready && ready.token === renderToken ? ready.blob : await render();
-      const res = blob ? await saveImage(blob, filename) : 'cancel';
-      if (res === 'cancel') {
-        note.textContent = '';
-      } else {
-        sfx('correct');
-        note.textContent = res === 'shared' ? 'Išsaugota!' : 'Piešinys atsisiųstas. Telefone galima ir paspausti bei palaikyti paveikslėlį.';
-        setTimeout(close, 900);
-      }
-    } catch {
-      note.textContent = 'Nepavyko – paspauskite ir palaikykite paveikslėlį viršuje, tada „Išsaugoti nuotrauką“.';
-    } finally {
-      busy = false;
-      saveBtn.disabled = false;
+
+  // Paspaudimas tvarkomas tiesiogiai per 'click' – kad iOS laikytų jį vartotojo veiksmu ir leistų bendrinimą.
+  saveBtn.addEventListener('click', async () => {
+    if (state !== 'ready' && state !== 'error') return;
+    if (!blob) {
+      render();
+      return;
     }
+    setState('saving');
+    let res;
+    try {
+      res = await saveImage(blob, filename);
+    } catch {
+      res = 'manual';
+    }
+    if (closed) return;
+    if (res === 'cancel') return setState('ready');
+    if (res === 'manual') {
+      return setState('error', 'Nepavyko atidaryti išsaugojimo. Spausk „Bandyti dar kartą“ arba palaikyk pirštą ant paveikslėlio → „Įtraukti į Nuotraukas“.');
+    }
+    sfx('correct');
+    setState('done', res === 'shared' ? 'Išsaugota!' : 'Piešinys atsisiųstas.');
+    setTimeout(close, 900);
   });
 
   sync();

@@ -97,14 +97,17 @@ export function drawGame(root, { level, onHome, onFinish }) {
   });
 
   // Išsaugoti piešinį (su juostele apačioje ir savo tekstu) – telefone į Nuotraukas.
+  let sheetOpen = null; // vienu metu – tik vienas išsaugojimo langas
   const saveBtn = tb('download', 'Išsaugoti piešinį', () => {
+    if (sheetOpen) return;
     const name = currentProfile()?.name;
     const d = new Date();
     const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    openSaveSheet({
+    sheetOpen = openSaveSheet({
       canvas,
       defaultText: name ? `${name} nupiešė ${item}` : `Nupiešiau ${item}`,
       filename: `piesinys-${drawId(item)}-${date}.png`,
+      onClose: () => (sheetOpen = null),
     });
   }, 'tool-save');
 
@@ -196,6 +199,7 @@ export function drawGame(root, { level, onHome, onFinish }) {
   shell.char.setEmotion('think');
   sayPrompt();
   return () => {
+    sheetOpen?.close();
     painter.destroy();
     round.destroy();
   };

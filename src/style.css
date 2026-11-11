@@ -2988,6 +2988,9 @@ input {
 }
 .save-style.on { border-color: var(--brown); box-shadow: 0 0 0 3px #fff inset; }
 .save-note { margin: 0; min-height: 1.2em; color: var(--sage-dark); font-weight: 700; }
+.save-note.err { color: #c0392b; font-size: 0.95rem; line-height: 1.3; }
+.save-card[data-state='error'] .save-preview { outline: 3px dashed #ff9f8f; outline-offset: 3px; }
+.save-go:disabled { opacity: 0.7; }
 .save-actions { display: flex; gap: 10px; }
 .save-actions .btn { flex: 1; }
 .save-actions .save-cancel { flex: 0 0 auto; }
@@ -3549,4 +3552,44 @@ input {
     grid-auto-rows: minmax(0, 1fr);
   }
   .menu-cards:has(> :nth-child(5)) .card-title { font-size: 1.2rem; line-height: 1.1; }
+}
+
+/* Piešimo įrankių eilutė – visada viena eilutė: mygtukai susitraukia pagal plotį (iPhone 6/SE: 375/320 px) */
+@media (orientation: portrait) {
+  .tool-row:has(> .tool-save) { flex-wrap: nowrap; }
+  .tool-row:has(> .tool-save) > .tool-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 44px;
+    width: auto;
+    height: auto;
+    aspect-ratio: 1;
+  }
+  .tool-row:has(> .tool-save) > .tool-btn svg { width: 58%; height: 58%; max-width: 24px; max-height: 24px; }
+  .tool-row:has(> .tool-save) > .tool-sep { flex: none; }
+}
+
+/* Išsaugojimo langas žemame stačiame ekrane (iPhone 6/7/8/SE) – telpa be slinkimo */
+@media (orientation: portrait) and (max-height: 700px) {
+  .save-card { gap: 10px; padding: 14px; }
+  .save-title { font-size: 1.15rem; }
+  .save-preview { max-height: 30vh; }
+  .save-text { height: 46px; }
+  .save-style { min-height: 42px; }
+  .save-actions .btn-xl { min-height: 58px; font-size: 1.25rem; }
+}
+
+/* Laikrodžio atsakymai – dalijasi plotį, siaurame ekrane (iPhone 6: 375 px) netelpa už krašto */
+.time-choices {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 480px);
+}
+.time-choices.n4 { grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 340px); }
+.time-btn { min-width: 0; padding-inline: 6px; font-size: clamp(1.5rem, 7.4vw, 2.4rem); }
+@media (orientation: landscape) {
+  /* šalia laikrodžio – stulpeliu (n4 – 2×2) */
+  .time-choices { width: auto; grid-template-columns: minmax(130px, 170px); gap: 10px; }
+  .time-choices.n4 { width: auto; grid-template-columns: repeat(2, minmax(110px, 150px)); }
+  .time-btn { height: clamp(52px, 17vh, 72px); }
+  .clock-wrap { align-self: stretch; }
 }
