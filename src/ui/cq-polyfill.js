@@ -36,6 +36,11 @@ export function cqPolyfill() {
   const set = (el, w, hh) => {
     el.style.setProperty('--cqw', `${w / 100}px`);
     el.style.setProperty('--cqh', `${hh / 100}px`);
+    // @container (min-aspect-ratio: 2/1) ir (max-aspect-ratio: 3/2) pakaitalas
+    if (hh > 0) {
+      el.classList.toggle('cq-wide', w / hh >= 2);
+      el.classList.toggle('cq-narrow', w / hh <= 1.5);
+    }
   };
   const watch = (el) => {
     if (watched.has(el)) return;

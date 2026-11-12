@@ -737,6 +737,7 @@ button:focus-visible {
   background: var(--surface);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow);
+  font-size: clamp(72px, 19vw, 120px); /* iOS < 16 */
   font-size: clamp(72px, 22cqmin, 120px);
   font-weight: 700;
   line-height: 1;
@@ -1903,6 +1904,22 @@ input {
     --rows: 1;
     width: min(calc(100 * var(--cqw)), calc(calc(100 * var(--cqh)) * 4 + var(--gap) * 3), 640px);
   }
+}
+/* Tas pats senam Safari (iOS < 16): klases cq-wide / cq-narrow konteineriui uždeda ui/cq-polyfill.js */
+.letters-holder.cq-wide > .letter-grid.n4 {
+  --cols: 4;
+  --rows: 1;
+  width: min(calc(100 * var(--cqw)), calc(calc(100 * var(--cqh)) * 4 + var(--gap) * 3), 640px);
+}
+.letters-holder.cq-narrow > .letter-grid.n3 {
+  --cols: 2;
+  --rows: 2;
+  width: min(calc(100 * var(--cqw)), calc(calc(100 * var(--cqh)) - var(--gap)), 400px);
+}
+.letters-holder.cq-narrow > .letter-grid.n3 > :last-child {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: calc(50% - var(--gap) / 2);
 }
 /* 3 raidės: 2 + 1, kai sritis siauresnė nei 3:2 (tada kortelės didesnės nei trijų eilėje) */
 @container (max-aspect-ratio: 3 / 2) {
@@ -4083,3 +4100,31 @@ input {
 @supports (width: 1cqw) {
   :root { --cqw: 1cqw; --cqh: 1cqh; }
 }
+
+/* =====================================================================
+   Žemi ekranai (iPhone 6/7/8/SE su Safari juostomis – ~375×553)
+   ===================================================================== */
+/* Lygių sąrašas: paskutinę eilę galima paslinkti virš eglučių */
+.level-many .level-body { padding-bottom: max(12px, 11vh); }
+@media (max-height: 620px) {
+  /* mažesnės kalvos ir eglutės – mažiau „lipa“ ant apatinių mygtukų */
+  .decor-hills { height: 11vh; min-height: 48px; }
+  .decor-trees { height: 9vh; min-height: 40px; bottom: 1vh; }
+}
+@media (orientation: portrait) and (max-height: 620px) {
+  /* Vandentiekis: įrankiai šone, kad lenta gautų visą aukštį */
+  .pipe-wrap { flex-direction: row; gap: 12px; --cell: min(70px, calc((calc(100 * var(--cqh)) - 8px) / (var(--rows) + 2.3)), calc((calc(100 * var(--cqw)) - 92px) / var(--cols))); }
+  .pipe-wrap .brain-toolbar { flex-direction: column; }
+}
+
+/* „Į“ su aiškia nosine (src/games/letters.js) */
+.letter-card .glyph-og { position: relative; }
+.letter-card .glyph-og .ogonek {
+  position: absolute;
+  left: 50%;
+  top: 0.58em;
+  width: 0.27em;
+  height: 0.37em;
+  margin-left: -0.15em;
+}
+.letter-card .glyph-og .ogonek svg { display: block; width: 100%; height: 100%; }

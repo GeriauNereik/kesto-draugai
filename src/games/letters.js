@@ -106,7 +106,7 @@ export function lettersGame(root, { level, onHome, onFinish }) {
     const options = buildOptions(target, level);
     const grid = h('div', { class: `letter-grid n${options.length}` });
     options.forEach((l) => {
-      const btn = h('button', { type: 'button', class: 'letter-card', 'aria-label': `Raidė ${l.ch}` }, h('span', { class: 'glyph', 'aria-hidden': 'true', text: l.ch }));
+      const btn = h('button', { type: 'button', class: 'letter-card', 'aria-label': `Raidė ${l.ch}` }, glyph(l.ch));
       onTap(btn, () => choose(btn, l));
       grid.append(btn);
     });
@@ -123,4 +123,11 @@ export function lettersGame(root, { level, onHome, onFinish }) {
     next();
   });
   return () => round.destroy();
+}
+
+const OGONEK = '<svg viewBox="0 0 30 40" aria-hidden="true"><path d="M17 2C6 10 4 24 9 31c4 5 11 6 17 3" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/></svg>';
+/** Raidė kortelėje. „Į“ šrifte nosinė vos matoma (atrodo kaip „!“) – piešiam „I“ su aiškia nosine. */
+function glyph(ch) {
+  if (ch !== 'Į') return h('span', { class: 'glyph', 'aria-hidden': 'true', text: ch });
+  return h('span', { class: 'glyph glyph-og', 'aria-hidden': 'true' }, ['I', h('span', { class: 'ogonek', html: OGONEK })]);
 }
