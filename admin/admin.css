@@ -67,9 +67,18 @@ button.danger { color: var(--warn); border-color: #f1cdc5; justify-self: start; 
 
 /* Kodas visiems */
 .bulk { display: grid; gap: 12px; }
-.lock-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.lock-form input[name='code'], .lock-form input[inputmode='numeric'] { width: 96px; font-variant-numeric: tabular-nums; letter-spacing: 0.08em; }
-.lock-form input:not([inputmode]) { flex: 1 1 200px; }
+.lock-form { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: end; }
+.code-field, .msg-field { display: grid; gap: 3px; font-weight: 600; }
+.msg-field { flex: 1 1 200px; }
+.code-label { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+.code-box { display: flex; gap: 6px; }
+.code-input { width: 112px; font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.14em; }
+.code-input::placeholder { font-weight: 400; letter-spacing: 0; }
+.dice { padding: 6px 10px; font-size: 1.05rem; line-height: 1; }
+.form-btns { display: flex; gap: 8px; }
+.code-hint { flex-basis: 100%; margin: -4px 0 4px; font-size: 0.82rem; color: var(--muted); }
+.code-hint.bad { color: var(--warn); font-weight: 600; }
+.code-hint.ok { color: var(--accent); font-weight: 600; }
 .note { margin: 0; padding: 8px 12px; border-radius: 9px; background: #e9f6ec; color: #1f6b33; font-weight: 600; }
 
 /* Sąrašas */

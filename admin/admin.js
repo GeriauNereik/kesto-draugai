@@ -218,23 +218,94 @@ async function act(fn, ok) {
     note(`Nepavyko: ${e.code === 'permission-denied' ? 'nėra teisių (ar prisijungta admin paskyra?)' : e.message}`, true);
   }
 }
-const CODE_HINT = 'Kodas turi būti iš 3–8 skaitmenų.';
+// ---------- Kodo laukelis ----------
+// Vaikas telefone kodą suveda skaičių klaviatūra (0–9), todėl kodas – tik skaitmenys, 3–8.
+// Laukelis pats išmeta ne skaičius ir iškart po savimi parodo, ar kodas tinka.
+const CODE_MIN = 3;
+const CODE_MAX = 8;
+const HINT = 'Tik skaičiai, 3–8 skaitmenys (pvz. 4821) – vaikas juos suves telefono klaviatūra.';
+/** Atsitiktinis 4 skaitmenų kodas, ne per paprastas (ne 1111, 1234, 4321). */
+function randomCode() {
+  for (;;) {
+    const c = String(Math.floor(1000 + Math.random() * 9000));
+    const d = [...c].map(Number);
+    const same = d.every((x) => x === d[0]);
+    const run = d.every((x, i) => !i || x - d[i - 1] === 1) || d.every((x, i) => !i || d[i - 1] - x === 1);
+    if (!same && !run) return c;
+  }
+}
+/**
+ * { field, hint, value(), check() } – check() grąžina kodą arba null (ir parodo klaidą po laukeliu).
+ * onChange(v) – kad perpiešiant neprapultų įvestas kodas.
+ */
+function codeInput({ id, value = '', onChange = () => {} }) {
+  const hint = el('p', { class: 'code-hint' }, HINT);
+  const setHint = (text, kind = '') => {
+    hint.textContent = text;
+    hint.className = `code-hint${kind ? ` ${kind}` : ''}`;
+  };
+  const status = (v, dropped = false) => {
+    if (dropped) return setHint('Galima tik skaičius – raidžių ir kitų ženklų vaikas įvesti negalės.', 'bad');
+    if (!v) return setHint(HINT);
+    if (v.length < CODE_MIN) return setHint(`Dar ${CODE_MIN - v.length} ${CODE_MIN - v.length === 1 ? 'skaitmuo' : 'skaitmenys'} (mažiausiai ${CODE_MIN}).`);
+    setHint(`✓ Kodas ${v} tinka.`, 'ok');
+  };
+  const input = el('input', {
+    'data-id': id, class: 'code-input', inputmode: 'numeric', pattern: '[0-9]*', maxlength: CODE_MAX, autocomplete: 'off',
+    placeholder: 'pvz. 4821', 'aria-label': 'Kodas (3–8 skaičiai)', value,
+    oninput: (e) => {
+      const raw = e.target.value;
+      const v = raw.replace(/\D/g, '').slice(0, CODE_MAX);
+      if (v !== raw) e.target.value = v;
+      status(v, v.length < raw.replace(/\s/g, '').length);
+      onChange(v);
+    },
+  });
+  const dice = el('button', {
+    type: 'button', class: 'ghost dice', title: 'Sugalvoti kodą', 'aria-label': 'Sugalvoti atsitiktinį kodą',
+    onclick: () => {
+      input.value = randomCode();
+      status(input.value);
+      onChange(input.value);
+      input.focus();
+    },
+  }, '🎲');
+  if (value) status(value);
+  const field = el('label', { class: 'code-field' }, el('span', { class: 'code-label' }, 'Kodas'), el('span', { class: 'code-box' }, input, dice));
+  return {
+    field,
+    hint,
+    value: () => input.value,
+    check() {
+      const v = input.value;
+      if (v.length >= CODE_MIN) return v;
+      setHint(v ? `Per trumpas kodas – reikia bent ${CODE_MIN} skaitmenų.` : 'Įrašyk kodą (3–8 skaičiai) arba spausk 🎲.', 'bad');
+      input.focus();
+      return null;
+    },
+  };
+}
 
 // ---------- Kodas visiems ----------
 // Raktas '*' – „visi šio telefono žaidėjai“ (tekstiniame kelyje '*' neleidžiamas, todėl FieldPath).
 const ALL = new FieldPath('locks', '*');
+const bulkCode = codeInput({ id: 'bulk:code' });
+$('#bulk').prepend(bulkCode.field, bulkCode.hint);
 $('#bulk').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const f = new FormData(ev.target);
-  const code = String(f.get('code') || '').replace(/\D/g, '');
-  if (code.length < 3) return note(CODE_HINT, true);
+  const code = bulkCode.check();
+  if (!code) return;
   if (!devices.size) return note('Telefonų dar nėra.');
-  const lock = { code, msg: String(f.get('msg') || '').trim(), at: Date.now() };
+  const msgText = String(f.get('msg') || '').trim();
+  if (!window.confirm(`Užrakinti visus telefonus (${devices.size}) kodu ${code}?`)) return;
+  const lock = { code, msg: msgText, at: Date.now() };
   // Kiekvienas atskirai – jei vienas telefonas ką tik pašalintas, kiti vis tiek užrakinami.
   await act(() => eachDevice((id) => updateDoc(doc(db, 'devices', id), ALL, lock)), `Užrakinta telefonų: ${devices.size}. Kodas ${code}.`);
 });
 $('#bulk-clear').addEventListener('click', async () => {
   if (!devices.size) return;
+  if (!window.confirm('Nuimti užraktus visiems telefonams?')) return;
   await act(() => eachDevice((id) => updateDoc(doc(db, 'devices', id), { locks: deleteField() })), 'Užraktai nuimti visiems telefonams.');
 });
 
@@ -271,21 +342,15 @@ function deviceRow(uid, entry) {
   const name = dev.label || dev.device || 'Įrenginys';
   const draft = drafts.get(uid) || { code: lock.on ? lock.code : '', msg: lock.on ? lock.msg || '' : '' };
 
-  const code = el('input', {
-    'data-id': `${uid}:code`, inputmode: 'numeric', pattern: '[0-9]*', maxlength: 8, placeholder: 'Kodas', 'aria-label': 'Kodas', value: draft.code,
-    oninput: (e) => drafts.set(uid, { ...draft, ...drafts.get(uid), code: e.target.value }),
-  });
+  const code = codeInput({ id: `${uid}:code`, value: draft.code, onChange: (v) => drafts.set(uid, { ...draft, ...drafts.get(uid), code: v }) });
   const msg = el('input', {
-    'data-id': `${uid}:msg`, placeholder: 'Žinutė (nebūtina)', 'aria-label': 'Žinutė', value: draft.msg,
+    'data-id': `${uid}:msg`, class: 'msg-input', placeholder: 'Žinutė vaikui (nebūtina)', 'aria-label': 'Žinutė', value: draft.msg,
     oninput: (e) => drafts.set(uid, { ...draft, ...drafts.get(uid), msg: e.target.value }),
   });
   const submit = async (ev) => {
     ev.preventDefault();
-    const v = code.value.replace(/\D/g, '');
-    if (v.length < 3) {
-      note(CODE_HINT, true);
-      return code.focus();
-    }
+    const v = code.check();
+    if (!v) return;
     drafts.delete(uid);
     await act(() => setLock(uid, v, msg.value.trim()), `Užrakinta: ${dev.label || dev.device || 'telefonas'}, kodas ${v}.`);
   };
@@ -312,9 +377,10 @@ function deviceRow(uid, entry) {
         ? el('span', { class: 'pill on' }, `🔒 Užrakinta · ${lock.code}`, lock.msg ? el('small', {}, `„${lock.msg}“`) : null)
         : el('span', { class: 'pill' }, lock.unlockedAt ? `🔓 Atrakinta ${when(lock.unlockedAt)}` : '🔓 Atrakinta'),
       el('form', { class: 'lock-form', onsubmit: submit },
-        code, msg,
-        el('button', { type: 'submit' }, lock.on ? 'Pakeisti' : 'Užrakinti'),
-        lock.on ? el('button', { type: 'button', class: 'ghost', onclick: () => act(() => clearLock(uid), 'Užraktas nuimtas.') }, 'Nuimti') : null)),
+        code.field, code.hint, el('label', { class: 'msg-field' }, el('span', { class: 'code-label' }, 'Žinutė'), msg),
+        el('div', { class: 'form-btns' },
+          el('button', { type: 'submit' }, lock.on ? 'Pakeisti kodą' : '🔒 Užrakinti'),
+          lock.on ? el('button', { type: 'button', class: 'ghost', onclick: () => act(() => clearLock(uid), 'Užraktas nuimtas.') }, 'Nuimti') : null))),
     el('details', { class: 'd-more', open: open.has(uid) || null, ontoggle: (e) => (e.target.open ? open.add(uid) : open.delete(uid)) },
       el('summary', {}, 'Veikla ir statistika'),
       details(uid, entry, days, profiles, daySec))
