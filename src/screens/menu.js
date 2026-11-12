@@ -27,7 +27,9 @@ function firstGreetToday() {
 
 export function menuScreen(root, { onPick, onParents, onSwitch, firstTime = false }) {
   const profile = currentProfile();
-  const host = character('ona', { emotion: 'happy', size: 'md', onTapChar: () => host.speak('phrases/ka_zaisime') });
+  // Meniu „šeimininkas“ – vaiko pasirinktas avataras (ne pelėda Ona).
+  const hostId = CHARACTERS[profile?.avatar] ? profile.avatar : 'ona';
+  const host = character(hostId, { emotion: 'happy', size: 'md', onTapChar: () => host.speak('phrases/ka_zaisime') });
 
   // Profilio ženklelis: avataras, vardas ir visos surinktos žvaigždutės ("stiklainis").
   const { total, seen } = jarInfo();

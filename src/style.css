@@ -4155,3 +4155,138 @@ input {
 .pipe-wrap { --recipe: 0px; }
 .pipe-wrap.has-recipe { --recipe: 16px; }
 .pipe-wrap.has-recipe .pipe-stage { padding-bottom: var(--recipe); }
+
+/* ---------- Rūšiuok šiukšles (konvejeris ir trys konteineriai) ---------- */
+.rc-game {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+.rc-line {
+  --it: min(104px, 25vw, 30vh);
+  position: relative;
+  flex: 1 1 auto;
+  min-height: calc(var(--it) * 1.55);
+  overflow: visible;
+}
+.rc-belt {
+  --belt-dur: 0.6s;
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  bottom: 6px;
+  height: 26px;
+  border-radius: 14px;
+  border: 3px solid #5a3825;
+  background: repeating-linear-gradient(90deg, #8d8a86 0 18px, #75726e 18px 36px);
+  box-shadow: 0 6px 0 #c9b9a5, 0 8px 10px rgba(90, 56, 37, 0.25);
+  animation: rc-belt var(--belt-dur) linear infinite;
+}
+.rc-belt.stopped { animation-play-state: paused; }
+@keyframes rc-belt { to { background-position: 36px 0; } }
+.rc-wheel {
+  position: absolute;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  margin-top: -15px;
+  border-radius: 50%;
+  background: #ffc531;
+  border: 3px solid #5a3825;
+}
+.rc-wheel.l { left: -8px; }
+.rc-wheel.r { right: -8px; }
+.rc-item {
+  position: absolute;
+  left: 0;
+  bottom: 30px;
+  width: var(--it);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  touch-action: none;
+  cursor: grab;
+  z-index: 2;
+  will-change: transform;
+}
+.rc-item img {
+  width: var(--it);
+  height: var(--it);
+  object-fit: contain;
+  filter: drop-shadow(0 4px 3px rgba(90, 56, 37, 0.25));
+  pointer-events: none;
+}
+.rc-name {
+  order: -1;
+  max-width: calc(var(--it) * 1.25);
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(90, 56, 37, 0.25);
+  color: var(--brown);
+  font-size: max(11px, calc(var(--it) * 0.13));
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  pointer-events: none;
+}
+.rc-item.sel img { filter: drop-shadow(0 0 0 #fff) drop-shadow(0 0 6px #ffb020) drop-shadow(0 0 3px #ffb020); }
+.rc-item.sel .rc-name { background: #ffe9a8; }
+.rc-item.dragging { z-index: 30; cursor: grabbing; }
+.rc-item.fall { transition: transform 0.55s ease-in, opacity 0.55s; opacity: 0; transform: translate(var(--fx, 100%), 140px) rotate(40deg) !important; }
+.rc-bins {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding-bottom: 4px;
+}
+.rc-bin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px 6px;
+  border: 0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.55);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.2s;
+}
+.rc-bin:active { transform: scale(0.95); }
+.rc-bin-art { position: relative; flex: none; width: min(96px, 24vw, 17vh); aspect-ratio: 100 / 92; display: block; }
+.rc-bin-shape { width: 100%; height: 100%; display: block; }
+.rc-bin-ex {
+  position: absolute;
+  left: 50%;
+  top: 36%;
+  width: 46%;
+  height: 52%;
+  object-fit: contain;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 10px;
+  padding: 2px;
+}
+.rc-bin-label { font-weight: 800; font-size: max(12px, min(15px, 3.6vw)); color: var(--brown); text-align: center; line-height: 1.1; }
+.rc-green { color: #4cb963; }
+.rc-blue { color: #3f8fe0; }
+.rc-yellow { color: #ffc531; }
+.rc-bin.over, .rc-bin.hint { background: #fff; box-shadow: 0 0 0 4px currentColor; }
+.rc-bin.hint { animation: rc-hint 0.5s ease-in-out 3 alternate; }
+@keyframes rc-hint { to { transform: scale(1.08); } }
+.rc-fly { position: fixed; z-index: 60; pointer-events: none; object-fit: contain; }
+/* gulsčiai: konteineriai šone, juosta per visą likusį plotį */
+@media (orientation: landscape) and (max-height: 520px) {
+  .rc-game { flex-direction: row; align-items: stretch; }
+  .rc-line { --it: min(84px, 22vh, 16vw); align-self: center; width: 100%; }
+  .rc-bins { grid-template-columns: 1fr; width: max(110px, 19vw); gap: 4px; padding: 0; align-content: center; }
+  .rc-bin { flex-direction: row; justify-content: flex-start; gap: 6px; padding: 3px 6px; }
+  .rc-bin-art { width: min(64px, 15vh); }
+  .rc-bin-label { text-align: left; }
+}

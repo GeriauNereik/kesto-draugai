@@ -1,6 +1,8 @@
 import { h } from '../ui/dom.js';
 import { button } from '../ui/button.js';
 import { createCharacter } from '../character/character.js';
+import { CHARACTERS } from '../config/characters.js';
+import { currentProfile } from '../storage.js';
 
 const TITLE = 'Kęsto draugai';
 
@@ -21,5 +23,7 @@ export function startScreen(root, { onStart }) {
     ])
   );
   root.append(screen);
-  createCharacter(screen.querySelector('.start-hero'), 'ona', { state: 'idle' });
+  // Jei žaidėjas jau yra – jo pasirinktas avataras; pirmą kartą (dar be žaidėjo) – pelėda Ona.
+  const avatar = currentProfile()?.avatar;
+  createCharacter(screen.querySelector('.start-hero'), CHARACTERS[avatar] ? avatar : 'ona', { state: 'idle' });
 }

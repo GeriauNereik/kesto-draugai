@@ -48,6 +48,7 @@ import { sudokuGame } from './games/brain/sudoku.js';
 import { tangramGame } from './games/brain/tangram.js';
 import { pathGame } from './games/brain/path.js';
 import { pipesGame } from './games/brain/pipes.js';
+import { recycleGame } from './games/recycle.js';
 import { hubScreen } from './screens/hub.js';
 import { setupOops67 } from './ui/oops67.js';
 
@@ -68,6 +69,7 @@ const GAME_MODULES = {
   tangram: tangramGame,
   path: pathGame,
   pipes: pipesGame,
+  recycle: recycleGame,
 };
 
 const app = document.getElementById('app');

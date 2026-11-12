@@ -1,6 +1,7 @@
 import { DRAW_CATEGORIES, ALL_DRAW_ITEMS } from './draw-items.js';
 import { getDrawDone } from '../storage.js';
 import { BRAIN_TILES } from './brain-levels.js';
+import { RECYCLE_LEVELS } from './recycle.js';
 
 // Žaidimų sąrašas: meniu kortelės, matematikos skiltis ir kiekvieno žaidimo lygiai.
 // levels[i]: { label – mygtuko tekstas, tiles – mažas vaizdelis mygtuke, wide – platūs langeliai }.
@@ -163,6 +164,16 @@ export const PLAY_GAMES = [
     // Be lygių ekrano: veikėjas renkamas pačiame žaidime (žr. src/games/runner.js).
     direct: true,
     levels: [{ label: 'Bėgti' }],
+  },
+  {
+    id: 'recycle',
+    char: 'gedas',
+    title: 'Rūšiuok šiukšles',
+    icon: 'cards',
+    img: 'recycle/card.webp',
+    progressive: true,
+    // Mygtuke: kiek daiktų ir „»“ – kiek greitesnė juosta (1–5 rodyklės)
+    levels: RECYCLE_LEVELS.map((l, i) => ({ label: `${i + 1}`, tiles: [`${l.count} daikt.`, '»'.repeat(Math.min(5, 1 + Math.floor(i / 4)))] })),
   },
   {
     id: 'tictactoe',

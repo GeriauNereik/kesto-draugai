@@ -21,6 +21,7 @@ export const PHRASES = {
   path_intro: 'Įsimink taką ir pereik jį!',
   pipes_intro: 'Pasuk vamzdžius, kad vanduo nutekėtų į tokios pat spalvos kubilą!',
   debesys_intro: 'Išspręsk, kol debesėlis nepakilo į viršų!',
+  rusiuok_intro: 'Nukreipk daiktus į tinkamą konteinerį. Stiklas – į žalią, popierius – į mėlyną. Plastikas ir metalas – į geltoną!',
   laikrodis_intro: 'Kiek valandų rodo laikrodis?',
   gedas_intro: 'Pagalvok ir pasirink atsakymą! Jei sunku, paspausk lemputę.',
   nepavyko: 'Šįkart nepavyko. Pabandyk dar kartą!',
