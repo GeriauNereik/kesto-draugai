@@ -3814,7 +3814,7 @@ input {
   gap: 10px;
   container-type: size;
   /* langelis: telpa plotis ir aukštis (eilutės + statinių ir kubilų eilės + įrankiai) */
-  --cell: min(76px, calc((calc(100 * var(--cqw)) - 16px) / var(--cols)), calc((calc(100 * var(--cqh)) - 80px) / (var(--rows) + 2.3)));
+  --cell: min(76px, calc((calc(100 * var(--cqw)) - 16px) / var(--cols)), calc((calc(100 * var(--cqh)) - 80px - var(--recipe)) / (var(--rows) + 2.3)));
 }
 .pipe-stage { display: flex; flex-direction: column; align-items: center; }
 .pipe-row {
@@ -3969,7 +3969,7 @@ input {
 .pipe-tank.bad .pipe-mark { transform: scale(1); background: #e5533d; }
 .pipe-tank.bad .pipe-mark::before { content: '✕'; }
 @media (orientation: landscape) {
-  .pipe-wrap { flex-direction: row; gap: 18px; --cell: min(70px, calc((calc(100 * var(--cqh)) - 8px) / (var(--rows) + 2.3)), calc((calc(100 * var(--cqw)) - 110px) / var(--cols))); }
+  .pipe-wrap { flex-direction: row; gap: 18px; --cell: min(70px, calc((calc(100 * var(--cqh)) - 8px - var(--recipe)) / (var(--rows) + 2.3)), calc((calc(100 * var(--cqw)) - 110px) / var(--cols))); }
   .pipe-wrap .brain-toolbar { flex-direction: column; }
 }
 
@@ -4113,7 +4113,7 @@ input {
 }
 @media (orientation: portrait) and (max-height: 620px) {
   /* Vandentiekis: įrankiai šone, kad lenta gautų visą aukštį */
-  .pipe-wrap { flex-direction: row; gap: 12px; --cell: min(70px, calc((calc(100 * var(--cqh)) - 8px) / (var(--rows) + 2.3)), calc((calc(100 * var(--cqw)) - 92px) / var(--cols))); }
+  .pipe-wrap { flex-direction: row; gap: 12px; --cell: min(70px, calc((calc(100 * var(--cqh)) - 8px - var(--recipe)) / (var(--rows) + 2.3)), calc((calc(100 * var(--cqw)) - 92px) / var(--cols))); }
   .pipe-wrap .brain-toolbar { flex-direction: column; }
 }
 
@@ -4128,3 +4128,30 @@ input {
   margin-left: -0.15em;
 }
 .letter-card .glyph-og .ogonek svg { display: block; width: 100%; height: 100%; }
+
+/* Vandentiekis: maišytos spalvos „receptas“ po kubilu (● + ●) */
+.pipe-recipe {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 96%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  font-size: max(13px, calc(var(--cell) * 0.28));
+  font-weight: 800;
+  line-height: 1;
+  color: var(--brown);
+}
+.pipe-dot { width: 1em; height: 1em; border-radius: 50%; background: var(--c); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15); }
+.pipe-plus { padding: 0 1px; }
+/* vieta receptui po kubilais – įskaičiuota į langelio dydį */
+.pipe-wrap { --recipe: 0px; }
+.pipe-wrap.has-recipe { --recipe: 16px; }
+.pipe-wrap.has-recipe .pipe-stage { padding-bottom: var(--recipe); }

@@ -21,6 +21,13 @@ const rotMask = (m, k = 1) => {
 const MIX = { b: '#3fa9f5', y: '#ffcf33', r: '#ff6250', by: '#4cb963', ry: '#ff9a2e', br: '#a970ff', bry: '#8b5a3c' };
 const NAME = { b: 'mėlynos', y: 'geltonos', r: 'raudonos', by: 'žalios', ry: 'oranžinės', br: 'violetinės', bry: 'rudos' };
 const norm = (x) => [...new Set(x)].sort().join('');
+/** Pelėdos paaiškinimas, iš kurių spalvų gaunama maišyta spalva. */
+const RECIPE = {
+  by: 'Mėlyna ir geltona kartu – žalia!',
+  ry: 'Raudona ir geltona kartu – oranžinė!',
+  br: 'Mėlyna ir raudona kartu – violetinė!',
+  bry: 'Ruda – kai susimaišo visos trys: mėlyna, geltona ir raudona!',
+};
 
 /** Vamzdžio SVG (pagrindinė kaukė – pasukama visa grupė). */
 function pipeSvg(m) {
@@ -137,10 +144,15 @@ export function pipesGame(root, { level, onHome, onFinish }) {
       h('span', { class: 'pipe-need', 'aria-hidden': 'true' }),
       h('span', { class: 'pipe-mark', 'aria-hidden': 'true' }),
     ]);
+    // maišytai spalvai – mažas „receptas“ po kubilu (● + ●), kad suprastų ir neskaitantys
+    if (t.need.length > 1) {
+      const parts = [...t.need].flatMap((x, j) => [...(j ? [h('span', { class: 'pipe-plus', text: '+' })] : []), h('span', { class: 'pipe-dot', style: `--c:${MIX[x]}` })]);
+      el.append(h('span', { class: 'pipe-recipe', 'aria-hidden': 'true' }, parts));
+    }
     tankEls.push([t, el]);
     bottom.append(el);
   }
-  shell.board.append(h('div', { class: 'pipe-wrap', style: `--cols:${cols};--rows:${rows}` }, [h('div', { class: 'pipe-stage' }, [top, grid, bottom]), shell.toolbar]));
+  shell.board.append(h('div', { class: `pipe-wrap${hasMix ? ' has-recipe' : ''}`, style: `--cols:${cols};--rows:${rows}` }, [h('div', { class: 'pipe-stage' }, [top, grid, bottom]), shell.toolbar]));
 
   const mask = (i) => rotMask(base[i], k[i]);
 
@@ -228,7 +240,11 @@ export function pipesGame(root, { level, onHome, onFinish }) {
   render(true);
   prevGood = tankEls.filter(([, el]) => el.classList.contains('ok')).length;
   if (level === 1) shell.char.show('Bakstelėk vamzdį – jis pasisuks!');
-  else if (hasMix && !hasValve) shell.char.show('Mėlyna ir geltona kartu – žalia!');
+  else if (hasMix) {
+    // sudėtingiausias šio lygio mišinys (ruda – visų trijų)
+    const mix = L.tanks.map((t) => t.need).sort((a, b) => b.length - a.length)[0];
+    shell.char.show(RECIPE[mix]);
+  }
   else if (hasValve && level <= 6) shell.char.show('Raudonas ratukas – čiaupas. Bakstelėk – atsisuks ar užsisuks.');
   return () => shell.destroy();
 }
