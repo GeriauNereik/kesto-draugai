@@ -1,16 +1,20 @@
 // Ona: „Paslėptas takas“ – ežiukas Domas parodo kelią per akmenukus, takas pasislepia, o vaikas turi jį pakartoti.
-// Spaudžiama akmenukas po akmenuko nuo apačios iki viršaus. Klaida – akmenukas sudreba (kelias nesibaigia);
-// po 3 klaidų takas parodomas dar kartą. Mygtukas „Iš naujo“ – parodo taką iš naujo.
+// Spaudžiama akmenukas po akmenuko nuo apačios iki viršaus. Gyvybės – 3 širdelės: klaida – akmenukas sudreba
+// ir dingsta širdelė (tęsiama nuo to paties akmenuko). Mygtukas „Iš naujo“ parodo taką dar kartą, bet kainuoja
+// širdelę (paskutinės – neatima). Širdelės baigėsi – parodomas visas takas ir lygis nepavyko (galima kartoti).
+// Žvaigždutės – kiek širdelių liko.
 import { h, onTap, wait } from '../../ui/dom.js';
 import { pulse } from '../../ui/motion.js';
 import { sfx } from '../../sfx.js';
 import { PATH_LEVELS } from '../../config/brain-levels.js';
-import { brainShell, starsByMistakes, seeded } from './base.js';
+import { brainShell, seeded } from './base.js';
+import { addHearts } from '../../ui/hearts.js';
 
 const WALKER = `${import.meta.env.BASE_URL}assets/characters/portraits/domas.webp`;
 const IMG = `${import.meta.env.BASE_URL}assets/brain/path/`;
 const HOME = `${IMG}home.webp`;
 const NS = 'http://www.w3.org/2000/svg';
+const LIVES = 3;
 
 /** Takas: nuo apatinės eilutės iki viršutinės, be grįžimų ir pasikartojimų, tiksliai len žingsnių. */
 function makePath({ cols, rows, len }, rnd) {
@@ -57,8 +61,8 @@ function makePath({ cols, rows, len }, rnd) {
 export function pathGame(root, { level, onHome, onFinish }) {
   const L = PATH_LEVELS[level - 1] || PATH_LEVELS[0];
   const path = makePath(L, seeded(8000 + level * 17));
-  let mistakes = 0;
-  let missesNow = 0; // klaidos nuo paskutinio parodymo
+  let lives = LIVES;
+  let over = false; // širdelės baigėsi
   let step = 1; // kiek akmenukų jau pereita (pirmasis – startas)
   let showing = true;
   let alive = true;
@@ -70,15 +74,18 @@ export function pathGame(root, { level, onHome, onFinish }) {
     onFinish,
     tools: {
       restart() {
-        if (shell.done || showing) return;
-        mistakes++;
-        shell.setMoves(mistakes, 'klaidos');
+        if (shell.done || showing || over || lives <= 1) return;
+        lives--;
+        hs.set(lives, { shake: true });
         step = 1;
         show();
       },
     },
   });
-  shell.setMoves(0, 'klaidos');
+  shell.setMoves(null);
+  const hs = addHearts(shell, LIVES);
+  const restartBtn = shell.toolbar.querySelector('[aria-label="Iš naujo"]');
+  const syncRestart = () => restartBtn && (restartBtn.disabled = lives <= 1);
 
   const grid = h('div', { class: 'path-grid', style: `--cols:${L.cols};--rows:${L.rows}` });
   const stones = [];
@@ -113,6 +120,7 @@ export function pathGame(root, { level, onHome, onFinish }) {
 
   async function show() {
     showing = true;
+    if (restartBtn) restartBtn.disabled = true;
     grid.classList.add('watch');
     stones.forEach((s) => s.classList.remove('lit', 'done', 'start'));
     const [r0, c0] = path[0];
@@ -138,7 +146,7 @@ export function pathGame(root, { level, onHome, onFinish }) {
     setTrail([path[0]]);
     grid.classList.remove('watch');
     showing = false;
-    missesNow = 0;
+    syncRestart();
     shell.char.show('Dabar tavo eilė!');
   }
 
@@ -151,20 +159,36 @@ export function pathGame(root, { level, onHome, onFinish }) {
       setTrail(path.slice(0, step + 1));
       sfx('knock', step % 5);
       step++;
-      if (step >= path.length) shell.win(starsByMistakes(mistakes), grid);
+      if (step >= path.length) shell.win(lives, grid);
       return;
     }
     if (s.classList.contains('done')) return; // jau pereitas akmenukas – nieko
-    mistakes++;
-    missesNow++;
-    shell.setMoves(mistakes, 'klaidos');
+    lives--;
+    hs.set(lives, { shake: true });
     sfx('wrong');
     pulse(s, 'shake');
-    if (missesNow >= 3) {
-      // padedam: parodom taką dar kartą, tęsiama nuo pradžios
-      step = 1;
-      show();
+    syncRestart();
+    if (lives <= 0) lose();
+  }
+
+  /** Širdelės baigėsi: parodom, kur buvo takas, ir lygis nepavyko. */
+  async function lose() {
+    over = true;
+    showing = true;
+    grid.classList.add('watch');
+    if (restartBtn) restartBtn.disabled = true;
+    shell.char.setEmotion('encourage');
+    shell.char.show('Oi, širdelės baigėsi! Štai kur buvo takas.');
+    await wait(600);
+    for (let i = step; i < path.length; i++) {
+      if (!alive) return;
+      const [r, c] = path[i];
+      stoneAt(r, c).classList.add('lit');
+      setTrail(path.slice(0, i + 1));
+      await wait(220);
     }
+    await wait(1600);
+    if (alive) onFinish({ failed: true });
   }
 
   show();
