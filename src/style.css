@@ -1,6 +1,10 @@
 /* Miškiniai – šviesus, linksmas miško stilius: sodrios, bet švarios spalvos. */
 :root {
   color-scheme: light;
+  /* Konteinerio matmenys (1 % pločio / aukščio). iOS < 16 nepalaiko cqw/cqh – tada juos pikseliais
+     kiekvienam konteineriui nustato ui/cq-polyfill.js (o be jo – bent ekrano dydis). */
+  --cqw: 1vw;
+  --cqh: 1vh;
   --bg: #fff6e5;
   --sky: #e3f4ff;
   --surface: #ffffff;
@@ -720,13 +724,13 @@ button:focus-visible {
   grid-template-columns: repeat(var(--cols), 1fr);
   gap: var(--gap);
   width: min(100%, 560px); /* iOS < 16 (be konteinerio vienetų) */
-  width: min(100cqw, calc((100cqh - (var(--rows) - 1) * var(--gap)) / var(--rows) * var(--cols) + (var(--cols) - 1) * var(--gap)), 560px);
+  width: min(calc(100 * var(--cqw)), calc((calc(100 * var(--cqh)) - (var(--rows) - 1) * var(--gap)) / var(--rows) * var(--cols) + (var(--cols) - 1) * var(--gap)), 560px);
 }
 .letter-grid.n4 {
   --cols: 2;
   --rows: 2;
   width: min(100%, 46vh, 400px); /* iOS < 16 */
-  width: min(100cqw, calc(100cqh - var(--gap)), 400px);
+  width: min(calc(100 * var(--cqw)), calc(calc(100 * var(--cqh)) - var(--gap)), 400px);
 }
 .letter-card {
   aspect-ratio: 1;
@@ -908,7 +912,7 @@ button:focus-visible {
   grid-template-columns: repeat(var(--cols), 1fr);
   gap: 12px;
   width: min(100%, calc((100vh - 300px) / var(--rows) * var(--cols)), 620px); /* iOS < 16 */
-  width: min(100cqw, calc((100cqh - (var(--rows) - 1) * 12px) / var(--rows) * var(--cols) + (var(--cols) - 1) * 12px), 620px);
+  width: min(calc(100 * var(--cqw)), calc((calc(100 * var(--cqh)) - (var(--rows) - 1) * 12px) / var(--rows) * var(--cols) + (var(--cols) - 1) * 12px), 620px);
 }
 .memory-grid.p5 {
   --cols: 3;
@@ -1808,7 +1812,7 @@ input {
   display: block;
   /* ≥72 px (MVP reikalavimas), bet niekada didesnė už kortelę – kad varnelė (Ž) ir nosinė (Ą) tilptų */
   font-size: clamp(64px, 16vw, 120px); /* iOS < 16 */
-  font-size: min(max(72px, 58cqh), 78cqh, 150px);
+  font-size: min(max(72px, calc(58 * var(--cqh))), calc(78 * var(--cqh)), 150px);
   line-height: 1;
   transform: translateY(-0.03em);
 }
@@ -1897,7 +1901,7 @@ input {
   .letter-grid.n4 {
     --cols: 4;
     --rows: 1;
-    width: min(100cqw, calc(100cqh * 4 + var(--gap) * 3), 640px);
+    width: min(calc(100 * var(--cqw)), calc(calc(100 * var(--cqh)) * 4 + var(--gap) * 3), 640px);
   }
 }
 /* 3 raidės: 2 + 1, kai sritis siauresnė nei 3:2 (tada kortelės didesnės nei trijų eilėje) */
@@ -1905,7 +1909,7 @@ input {
   .letter-grid.n3 {
     --cols: 2;
     --rows: 2;
-    width: min(100cqw, calc(100cqh - var(--gap)), 400px);
+    width: min(calc(100 * var(--cqw)), calc(calc(100 * var(--cqh)) - var(--gap)), 400px);
   }
   .letter-grid.n3 > :last-child {
     grid-column: 1 / -1;
@@ -1931,8 +1935,8 @@ input {
   margin: auto;
   width: 100%; /* iOS < 16: rėmeliai ir taip kvadratiniai */
   height: 100%;
-  width: min(100cqw, 100cqh);
-  height: min(100cqw, 100cqh);
+  width: min(calc(100 * var(--cqw)), calc(100 * var(--cqh)));
+  height: min(calc(100 * var(--cqw)), calc(100 * var(--cqh)));
   transition: opacity 250ms ease;
   -webkit-touch-callout: none;
   user-select: none;
@@ -2209,8 +2213,8 @@ input {
 .clock-face {
   width: min(78vw, 40vh, 320px); /* iOS < 16 */
   height: min(78vw, 40vh, 320px);
-  width: min(100cqw, 100cqh, 320px);
-  height: min(100cqw, 100cqh, 320px);
+  width: min(calc(100 * var(--cqw)), calc(100 * var(--cqh)), 320px);
+  height: min(calc(100 * var(--cqw)), calc(100 * var(--cqh)), 320px);
   filter: drop-shadow(0 6px 10px rgba(90, 56, 37, 0.15));
 }
 .time-choices {
@@ -2376,7 +2380,7 @@ input {
   grid-template-rows: repeat(3, minmax(0, 1fr));
   gap: 10px;
   width: min(100%, 50vh, 420px); /* iOS < 16 */
-  width: min(100cqw, calc(100cqh - 44px), 420px);
+  width: min(calc(100 * var(--cqw)), calc(calc(100 * var(--cqh)) - 44px), 420px);
   aspect-ratio: 1;
   padding: 10px;
   border-radius: var(--r-lg);
@@ -3108,7 +3112,7 @@ input {
   /* daikto dydis: telpa į aukštį (eilės × stiklainis su vieta pakeltam daiktui) ir į plotį */
   --spare-h: calc(150px + var(--rows) * 18px);
   --spare-w: 16px;
-  --item: min(62px, calc((100cqh - var(--spare-h)) / (var(--rows) * (var(--cap) + 1.15))), calc((100cqw - var(--spare-w)) / var(--per) - 30px));
+  --item: min(62px, calc((calc(100 * var(--cqh)) - var(--spare-h)) / (var(--rows) * (var(--cap) + 1.15))), calc((calc(100 * var(--cqw)) - var(--spare-w)) / var(--per) - 30px));
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -3265,7 +3269,7 @@ input {
 .traffic-board {
   --cell: calc(100% / var(--n));
   position: relative;
-  width: min(100cqw - 24px, 100cqh - 90px, 520px);
+  width: min(calc(100 * var(--cqw)) - 24px, calc(100 * var(--cqh)) - 90px, 520px);
   aspect-ratio: 1;
   border-radius: 18px;
   background:
@@ -3342,13 +3346,13 @@ input {
   justify-content: center;
   gap: 14px;
   container-type: size;
-  --item: min(58px, calc((100cqw - 8px * var(--n)) / var(--n)));
+  --item: min(58px, calc((calc(100 * var(--cqw)) - 8px * var(--n)) / var(--n)));
 }
 .sdk-grid {
   display: grid;
   grid-template-columns: repeat(var(--n), minmax(0, 1fr));
   grid-template-rows: repeat(var(--n), minmax(0, 1fr));
-  width: min(100cqw - 16px, 100cqh - var(--item) - 40px, 480px);
+  width: min(calc(100 * var(--cqw)) - 16px, calc(100 * var(--cqh)) - var(--item) - 40px, 480px);
   aspect-ratio: 1;
   border-radius: 18px;
   background: #b98a62;
@@ -3473,7 +3477,7 @@ input {
 }
 /* lenta – miško pievelė, viršuje Domo namai (tikslas) */
 .path-board {
-  --cell: min(calc((100cqw - 40px) / var(--cols)), calc((100cqh - 90px) / (var(--rows) + 1.4)), 84px);
+  --cell: min(calc((calc(100 * var(--cqw)) - 40px) / var(--cols)), calc((calc(100 * var(--cqh)) - 90px) / (var(--rows) + 1.4)), 84px);
   position: relative;
   padding: calc(var(--cell) * 0.85) 10px 10px;
   margin-top: calc(var(--cell) * 0.5);
@@ -3597,7 +3601,7 @@ input {
 }
 
 @media (orientation: landscape) {
-  .path-board { --cell: min(calc((100cqw - 130px) / var(--cols)), calc((100cqh - 24px) / (var(--rows) + 0.9)), 84px); }
+  .path-board { --cell: min(calc((calc(100 * var(--cqw)) - 130px) / var(--cols)), calc((calc(100 * var(--cqh)) - 24px) / (var(--rows) + 0.9)), 84px); }
 }
 
 /* --- Galvosūkiai gulsčiame ekrane: įrankiai šone, lenta per visą aukštį --- */
@@ -3609,12 +3613,12 @@ input {
   .path-wrap .brain-toolbar,
   .traffic-wrap .brain-toolbar { flex-direction: column; }
   .sort-row { --spare-h: calc(var(--rows) * 18px + 70px); --spare-w: 96px; }
-  .sort-wrap .sort-goal { flex-direction: column; flex-wrap: wrap; max-height: 100cqh; border-radius: 24px; }
-  .sort-row { --spare-w: 150px; }
-  .traffic-board { width: min(100cqw - 110px, 100cqh - 16px, 520px); }
-  .sdk-wrap { flex-direction: row; gap: 18px; --item: min(56px, calc((100cqh - 8px * var(--n)) / var(--n))); }
-  .sdk-wrap .sdk-palette { flex-direction: column; flex-wrap: wrap; max-height: 100cqh; }
-  .sdk-grid { width: min(100cqh - 16px, 100cqw - var(--item) * 2 - 40px, 480px); }
+  .sort-wrap .sort-goal { flex-direction: column; flex-wrap: wrap; max-height: calc(100 * var(--cqh)); border-radius: 24px; }
+  .sort-row { --spare-w: 220px; } /* tikslas (iki 2 stulpelių) + įrankiai + tarpai */
+  .traffic-board { width: min(calc(100 * var(--cqw)) - 110px, calc(100 * var(--cqh)) - 16px, 520px); }
+  .sdk-wrap { flex-direction: row; gap: 18px; --item: min(56px, calc((calc(100 * var(--cqh)) - 8px * var(--n)) / var(--n))); }
+  .sdk-wrap .sdk-palette { flex-direction: column; flex-wrap: wrap; max-height: calc(100 * var(--cqh)); }
+  .sdk-grid { width: min(calc(100 * var(--cqh)) - 16px, calc(100 * var(--cqw)) - var(--item) * 2 - 40px, 480px); }
 }
 
 /* =====================================================================
@@ -3689,8 +3693,8 @@ input {
   position: absolute;
   inset: 0;
   margin: auto;
-  width: min(92cqw, 92cqh);
-  height: min(92cqw, 92cqh);
+  width: min(calc(92 * var(--cqw)), calc(92 * var(--cqh)));
+  height: min(calc(92 * var(--cqw)), calc(92 * var(--cqh)));
   border-radius: 50%;
   background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.45));
   box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.9);
@@ -3793,7 +3797,7 @@ input {
   gap: 10px;
   container-type: size;
   /* langelis: telpa plotis ir aukštis (eilutės + statinių ir kubilų eilės + įrankiai) */
-  --cell: min(76px, calc((100cqw - 16px) / var(--cols)), calc((100cqh - 80px) / (var(--rows) + 2.3)));
+  --cell: min(76px, calc((calc(100 * var(--cqw)) - 16px) / var(--cols)), calc((calc(100 * var(--cqh)) - 80px) / (var(--rows) + 2.3)));
 }
 .pipe-stage { display: flex; flex-direction: column; align-items: center; }
 .pipe-row {
@@ -3948,7 +3952,7 @@ input {
 .pipe-tank.bad .pipe-mark { transform: scale(1); background: #e5533d; }
 .pipe-tank.bad .pipe-mark::before { content: '✕'; }
 @media (orientation: landscape) {
-  .pipe-wrap { flex-direction: row; gap: 18px; --cell: min(70px, calc((100cqh - 8px) / (var(--rows) + 2.3)), calc((100cqw - 110px) / var(--cols))); }
+  .pipe-wrap { flex-direction: row; gap: 18px; --cell: min(70px, calc((calc(100 * var(--cqh)) - 8px) / (var(--rows) + 2.3)), calc((calc(100 * var(--cqw)) - 110px) / var(--cols))); }
   .pipe-wrap .brain-toolbar { flex-direction: column; }
 }
 
@@ -4075,3 +4079,7 @@ input {
 .run-coins b { min-width: 1.4em; text-align: left; }
 .run-coins-final { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-weight: 700; color: var(--ochre-dark); }
 .run-coins-final img { width: 24px; height: 24px; object-fit: contain; }
+
+@supports (width: 1cqw) {
+  :root { --cqw: 1cqw; --cqh: 1cqh; }
+}

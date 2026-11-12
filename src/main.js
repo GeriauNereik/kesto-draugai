@@ -11,6 +11,7 @@ import './style.css';
 import { unlockAudio, preload, stop, setMuted } from './audio.js';
 import { setupPwa, applyPendingUpdate } from './pwa.js';
 import { aspectPolyfill } from './ui/aspect-polyfill.js';
+import { cqPolyfill } from './ui/cq-polyfill.js';
 import { startActivity, track, profileChanged, setPlaying } from './sync/activity.js';
 import { watchLock } from './screens/lock.js';
 import { allPortraits } from './config/characters.js';
@@ -223,6 +224,7 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('gesturestart', (e) => e.preventDefault());
 
 aspectPolyfill(); // iOS 14: CSS aspect-ratio pakaitalas
+cqPolyfill(); // iOS < 16: cqw/cqh pakaitalas (iPhone 7 ir senesni)
 setMuted(!getSetting('sound'));
 document.body.prepend(decor());
 screens.start();
