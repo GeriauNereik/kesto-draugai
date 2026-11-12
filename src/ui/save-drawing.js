@@ -3,6 +3,7 @@
 import { h, onTap } from './dom.js';
 import { ICONS } from './icons.js';
 import { sfx } from '../sfx.js';
+import { pulse } from './motion.js';
 
 const FONT = '"Baloo 2", system-ui, -apple-system, sans-serif';
 
@@ -183,7 +184,8 @@ const isStandalone = () => window.matchMedia?.('(display-mode: standalone)').mat
 
 /**
  * Išsaugo paveikslėlį.
- * Grąžina 'shared' | 'downloaded' | 'cancel' | 'manual' (reikia paspausti ir palaikyti peržiūrą).
+ * Grąžina 'shared' | 'downloaded' | 'cancel' | 'manual' (nepavyko – galima bandyti dar kartą arba palaikyti peržiūrą)
+ * | 'longpress' (telefonas bendrinimo nepalaiko – tik palaikyti peržiūrą).
  * Svarbu: iOS bendrinimo langą leidžia atidaryti tik iškart po paspaudimo, todėl prieš navigator.share negali būti jokio laukimo.
  * Nesėkmės atveju iOS NEnaudojam <a download> – programėlėje (pridėtoje prie pradžios ekrano) tai atidaro naršyklę su svetaine.
  */
@@ -205,7 +207,7 @@ export async function saveImage(blob, filename) {
       if (isIOS() || isStandalone()) return 'manual';
     }
   } else if (isIOS()) {
-    return 'manual';
+    return 'longpress';
   }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -349,6 +351,13 @@ export function openSaveSheet({ canvas, defaultText = '', filename = 'piesinys.p
     if (res === 'cancel') return setState('ready');
     if (res === 'manual') {
       return setState('error', 'Nepavyko atidaryti išsaugojimo. Spausk „Bandyti dar kartą“ arba palaikyk pirštą ant paveikslėlio → „Įtraukti į Nuotraukas“.');
+    }
+    if (res === 'longpress') {
+      // senesnis telefonas – išsaugoti galima tik palaikius pirštą ant peržiūros
+      setState('ready', 'Palaikyk pirštą ant paveikslėlio viršuje ir pasirink „Įtraukti į Nuotraukas“.');
+      card.dataset.state = 'longpress';
+      pulse(preview, 'bump');
+      return;
     }
     sfx('correct');
     setState('done', res === 'shared' ? 'Išsaugota!' : 'Piešinys atsisiųstas.');
