@@ -109,7 +109,7 @@ export function tictactoeGame(root, { level, onHome, onFinish }) {
   let cells = [];
   let myTurn = true;
 
-  const shell = gameShell(root, { charId: 'veja', total: TTT_GAMES, onHome, onRepeat: () => shell.char.speak('phrases/kryziukai_intro') });
+  const shell = gameShell(root, { charId: 'veja', fixedChar: true, total: TTT_GAMES, onHome, onRepeat: () => shell.char.speak('phrases/kryziukai_intro') });
   const round = createRound(shell);
 
   const grid = h('div', { class: 'ttt-grid', role: 'grid', 'aria-label': 'Kryžiukų ir nuliukų lenta' });

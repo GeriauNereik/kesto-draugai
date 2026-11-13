@@ -6,9 +6,10 @@ import { ICONS } from '../ui/icons.js';
 import { sfx } from '../sfx.js';
 import { stagger } from '../ui/fx.js';
 import { levelsSummary } from '../ui/stars.js';
+import { playerChar } from '../ui/player-char.js';
 
 export function hubScreen(root, { hub, onPick, onHome }) {
-  const host = character(hub.char, { emotion: 'happy', size: 'md', onTapChar: () => host.speak(`phrases/${hub.greet}`) });
+  const host = character(playerChar(hub.char), { emotion: 'happy', size: 'md', onTapChar: () => host.speak(`phrases/${hub.greet}`) });
   let picking = false;
   const cards = hub.hub.map((g) =>
     onTap(

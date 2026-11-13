@@ -1,3 +1,4 @@
+import { playerChar } from '../ui/player-char.js';
 import { h, onTap, pulse } from '../ui/dom.js';
 import { character } from '../ui/speech-bubble.js';
 import { levelsSummary } from '../ui/stars.js';
@@ -28,7 +29,7 @@ function firstGreetToday() {
 export function menuScreen(root, { onPick, onParents, onSwitch, firstTime = false }) {
   const profile = currentProfile();
   // Meniu „šeimininkas“ – vaiko pasirinktas avataras (ne pelėda Ona).
-  const hostId = CHARACTERS[profile?.avatar] ? profile.avatar : 'ona';
+  const hostId = playerChar();
   const host = character(hostId, { emotion: 'happy', size: 'md', onTapChar: () => host.speak('phrases/ka_zaisime') });
 
   // Profilio ženklelis: avataras, vardas ir visos surinktos žvaigždutės ("stiklainis").

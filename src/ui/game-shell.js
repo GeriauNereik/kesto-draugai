@@ -2,14 +2,16 @@ import { h } from './dom.js';
 import { iconButton } from './button.js';
 import { progress } from './progress.js';
 import { character } from './speech-bubble.js';
+import { playerChar } from './player-char.js';
 
 /**
  * Bendras žaidimo maketas: viršuje "Atgal", progresas, "Pakartoti garsą";
  * veikėjas su burbulu (vertikaliai – viršuje, horizontaliai – šone); žaidimo laukas.
  */
-export function gameShell(root, { charId, total, onHome, onRepeat }) {
+// Veikėjas – vaiko pasirinktas avataras; fixedChar: true – žaidimo savas veikėjas (pvz. Vėja – kryžiukų priešininkė).
+export function gameShell(root, { charId, total, onHome, onRepeat, fixedChar = false }) {
   const prog = progress(total);
-  const char = character(charId, { emotion: 'think', size: 'md', onTapChar: onRepeat });
+  const char = character(fixedChar ? charId : playerChar(charId), { emotion: 'think', size: 'md', onTapChar: onRepeat });
   const board = h('div', { class: 'board' });
   const top = h('header', { class: 'topbar' }, [
     iconButton({ icon: 'home', ariaLabel: 'Atgal į meniu', onClick: onHome }),

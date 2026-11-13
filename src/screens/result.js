@@ -1,3 +1,4 @@
+import { playerChar } from '../ui/player-char.js';
 import { h, wait } from '../ui/dom.js';
 import { button } from '../ui/button.js';
 import { character } from '../ui/speech-bubble.js';
@@ -8,7 +9,7 @@ import { burst, celebrate } from '../ui/fx.js';
 import { popStars, appear } from '../ui/motion.js';
 
 export function resultScreen(root, { game, starCount, isBest, failed = false, onAgain, onNext, onMenu }) {
-  const char = character(game.char, { emotion: failed ? 'encourage' : 'happy', size: 'lg' });
+  const char = character(playerChar(game.char), { emotion: failed ? 'encourage' : 'happy', size: 'lg' });
   const actions = h('div', { class: 'result-actions' }, [
     onNext && !failed ? button({ label: 'Kitas lygis', icon: 'next', cls: 'btn-xl', onClick: onNext }) : null,
     button({ label: failed ? 'Bandyti dar kartą' : 'Kartoti šį lygį', icon: 'replay', variant: onNext && !failed ? 'secondary' : 'primary', cls: 'btn-xl', onClick: onAgain }),

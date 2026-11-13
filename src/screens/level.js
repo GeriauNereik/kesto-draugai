@@ -1,3 +1,4 @@
+import { playerChar } from '../ui/player-char.js';
 import { h } from '../ui/dom.js';
 import { button, iconButton } from '../ui/button.js';
 import { character } from '../ui/speech-bubble.js';
@@ -12,7 +13,7 @@ export function isUnlocked(game, level) {
 }
 
 export function levelScreen(root, { game, onLevel, onHome }) {
-  const char = character(game.char, { emotion: 'happy', size: 'lg', onTapChar: () => char.speak('phrases/pasiruoses') });
+  const char = character(playerChar(game.char), { emotion: 'happy', size: 'lg', onTapChar: () => char.speak('phrases/pasiruoses') });
   const levels = game.levels || [];
   const many = levels.length > 2;
 
