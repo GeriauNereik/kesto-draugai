@@ -173,7 +173,7 @@ export const PLAY_GAMES = [
     img: 'recycle/card.webp',
     progressive: true,
     // Mygtuke: kiek daiktų ir „»“ – kiek greitesnė juosta (1–5 rodyklės)
-    levels: RECYCLE_LEVELS.map((l, i) => ({ label: `${i + 1}`, tiles: [`${l.count} daikt.`, '»'.repeat(Math.min(5, 1 + Math.floor(i / 4)))] })),
+    levels: RECYCLE_LEVELS.map((l, i) => ({ label: `${i + 1}`, tiles: [`${l.count} daikt.`, '»'.repeat(Math.min(5, 1 + Math.floor(i / 8)))] })),
   },
   {
     id: 'tictactoe',

@@ -4,7 +4,7 @@
 //  • bakstelėti konteinerį – į jį keliauja toliausiai nuvažiavęs daiktas (arba pažymėtas);
 //  • bakstelėti daiktą (pažymimas), tada konteinerį;
 //  • nutempti daiktą pirštu į konteinerį.
-// Klaida ar nukritęs juostos gale daiktas – minus širdelė (Gedas pasako, kur jis turėjo keliauti).
+// Klaida ar nespėtas išrūšiuoti daiktas (nukrenta juostos gale, net jei laikomas pirštu) – minus širdelė (Gedas pasako, kur jis turėjo keliauti).
 // Kuo aukštesnis lygis, tuo daugiau daiktų ir tuo greičiau važiuoja juosta (src/config/recycle.js).
 import { h, onTap, shuffle, wait, pulse } from '../ui/dom.js';
 import { gameShell } from '../ui/game-shell.js';
@@ -107,10 +107,10 @@ export function recycleGame(root, { level, onHome, onFinish }) {
     if (spawned < L.count && (empty || (L.gap != null && sinceSpawn >= L.gap))) spawn();
     const end = line.clientWidth;
     for (const it of live.slice()) {
-      if (it.drag) continue;
+      // laikomas ar tempiamas daiktas „laiko“ nesustabdo – jo vieta juostoje vis tiek slenka
       it.x += v * dt;
-      place(it);
-      // juostos gale daiktas nukrenta
+      if (!it.drag?.moved) place(it);
+      // nespėjai – juostos gale daiktas nukrenta (net jei jį dar laikai pirštu)
       if (it.x > end - it.w * 0.35) miss(it);
     }
   }
@@ -184,6 +184,11 @@ export function recycleGame(root, { level, onHome, onFinish }) {
 
   function miss(it) {
     remove(it);
+    if (it.drag) {
+      it.drag = false;
+      it.el.classList.remove('dragging');
+      BIN_ORDER.forEach((b) => binEls[b].classList.remove('over'));
+    }
     const [, name, right] = it.data;
     it.el.classList.add('fall');
     setTimeout(() => it.el.remove(), 600);
@@ -258,8 +263,8 @@ export function recycleGame(root, { level, onHome, onFinish }) {
   function dragEnd(it, p) {
     const d = it.drag;
     it.drag = false;
+    if (!d || !live.includes(it)) return; // jau nukrito (nespėjo)
     BIN_ORDER.forEach((b) => binEls[b].classList.remove('over'));
-    if (!d) return;
     if (!d.moved) return selectItem(it); // nepajudėjo – bakstelėjimas
     it.el.classList.remove('dragging');
     const b = running && binAt(p.x, p.y);
